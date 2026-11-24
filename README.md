@@ -276,7 +276,9 @@ so penrose’s agents, Claude and you never fight over it.
 
 **1. Download and install**<br>
 <sub>Get the installer from <a href="../../releases/latest">Releases</a> (the <code>.exe</code> for Windows, the
-<code>.dmg</code> for a Mac) and run it, like any other app. penrose tells you when there is an update.</sub>
+<code>.dmg</code> for a Mac) and run it, like any other app. On a Mac, drag penrose into Applications; if it
+says it can’t verify penrose, <a href="#mac-warning">there is a one-line fix</a>. penrose tells you when there is an
+update.</sub>
 
 </td>
 <td width="50%" valign="top">
@@ -368,10 +370,21 @@ Keep it. penrose has its own phone, an Android one, and you sign in to your apps
 Instagram, Messenger and Telegram, but not iMessage, which is Apple’s alone. The penrose app for your pocket is
 a web app you add from your phone’s browser.
 
-**Windows or my Mac warned me about the installer.**
+<a id="mac-warning"></a>**Windows or my Mac warned me about the installer.**
 Our installers aren’t signed with a paid certificate yet, so your computer says it doesn’t recognise who made
-them. On Windows, choose **More info**, then **Run anyway**. On a Mac, try to open penrose once, then go to
-**System Settings › Privacy & Security**, scroll down and choose **Open Anyway**.
+them. They’re safe to open, and the source is all here to check.
+
+On Windows, choose **More info**, then **Run anyway**.
+
+On a Mac you’ll see “Apple could not verify penrose is free of malware”. Click **Done** (not Move to Bin), open
+**Terminal** (press ⌘ Space, type Terminal, press Return), paste this and press Return:
+
+```bash
+xattr -cr /Applications/penrose.app && open /Applications/penrose.app
+```
+
+penrose opens, and it won’t ask again. If you’d rather not use Terminal, open **System Settings › Privacy &
+Security**, scroll down and choose **Open Anyway**.
 
 **How do updates work?**
 penrose checks by itself. On Windows it downloads the update and asks you to restart. On a Mac it tells you a

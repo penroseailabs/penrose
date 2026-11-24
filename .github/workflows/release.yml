@@ -163,7 +163,7 @@ jobs:
           if [ -f dist/latest.yml ]; then notes="$notes
           - **Windows:** run the \`Setup .exe\`."; else missing="$missing Windows"; fi
           if [ -f dist/latest-mac.yml ]; then notes="$notes
-          - **macOS (Apple Silicon):** open the \`.dmg\` and drag penrose into Applications."; else missing="$missing macOS"; fi
+          - **macOS (Apple Silicon):** open the \`.dmg\` and drag penrose into Applications. If your Mac says it can't verify penrose, run \`xattr -cr /Applications/penrose.app\` in Terminal, then open it again."; else missing="$missing macOS"; fi
           if [ -f dist/latest-linux.yml ]; then notes="$notes
           - **Linux (x64, preview):** make the \`.AppImage\` executable and run it."; else missing="$missing Linux"; fi
           if [ -n "$missing" ]; then
