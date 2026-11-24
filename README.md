@@ -26,7 +26,7 @@ beside the AI that uses it.<br>No second device, no cables, nothing to buy: the 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/readme/setup-dark.webp">
-    <img src="docs/readme/setup-light.webp" alt="Where penrose runs. On the left, your own phone, iPhone or Android, with the penrose app: you type or talk to it from anywhere. In the middle, an end-to-end encrypted link that nobody in between can read. On the right, your computer at home, where penrose's agents and their own Android phone run side by side; the agent is tapping Reserve in a restaurant app. Below: no extra phone to buy; no penrose servers, no account with us; only the AI model you chose sees a task, on your own key." width="100%">
+    <img src="docs/readme/setup-light.webp" alt="Where penrose runs. On the left, your own phone, iPhone or Android, with the penrose app: you type or talk to it from anywhere. In the middle, an end-to-end encrypted link that only your phone and your computer can read. On the right, your computer at home, where penrose's agents and their own Android phone run side by side; the agent is tapping Reserve in a restaurant app. Below: no extra phone to buy; no penrose servers, no account with us; only the AI model you chose sees a task, on your own key." width="100%">
   </picture>
 </p>
 
