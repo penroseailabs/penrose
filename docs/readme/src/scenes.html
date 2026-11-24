@@ -47,11 +47,10 @@
   svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
   /* ---------- hero ---------- */
-  #hero { width: 1200px; height: 620px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  #hero { width: 1200px; height: 540px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
   #hero .icon { width: 108px; height: 108px; border-radius: 26px; box-shadow: var(--e3); margin-bottom: 30px; }
   #hero .name { font-size: 104px; margin-bottom: 26px; }
-  #hero h1 { font-size: 46px; line-height: 1.1; font-weight: 600; letter-spacing: -0.028em; margin: 0 0 18px; }
-  #hero p { font-size: 21px; line-height: 1.45; margin: 0; max-width: 700px; letter-spacing: -0.012em; }
+  #hero h1 { font-size: 46px; line-height: 1.1; font-weight: 600; letter-spacing: -0.028em; margin: 0; }
 
   /* ---------- the link preview (GitHub's social preview, 1280x640) and the account picture ---------- */
   #social { width: 1280px; height: 640px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
@@ -271,12 +270,10 @@ const LOGO = "../../../desktop/build/logo.png";
 
 const scenes = {
   hero: () => `
-    <div id="hero" class="scene marble rounded" data-tiles="1200x620" data-centre="0.5,0.38">
+    <div id="hero" class="scene marble rounded" data-tiles="1200x540" data-centre="0.5,0.4">
       <img class="icon" src="${LOGO}">
       <div class="wordmark name">penrose</div>
       <h1>Give your agent a phone.</h1>
-      <p class="muted">A real phone for your AI, with your apps on it, signed in as you.
-      Ask in plain words. It runs the errand, and checks with you before it spends.</p>
     </div>`,
 
   social: () => `

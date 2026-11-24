@@ -1,7 +1,11 @@
 name: Release
 
-# Builds penrose for Windows, macOS and Linux under one build ID and publishes the three together as one GitHub
-# release. Installed copies update from that release (docs/DESKTOP.md, "Releases and updates").
+# Builds penrose for Windows, macOS and Linux under one build ID and publishes them as one GitHub release.
+# Installed copies update from that release (docs/DESKTOP.md, "Releases and updates").
+#
+# A platform whose build did not finish (GitHub is at times out of Mac machines) is left out of the release, not
+# allowed to hold it back. Re-run that job from the run's page ("Re-run failed jobs") and it is added to the same
+# release, under the same version.
 #
 # Start it from the Actions tab (Release, Run workflow), or push the commit to ship to the `release` branch:
 #   git push origin main:release
@@ -47,7 +51,7 @@ jobs:
     name: Build (${{ matrix.name }})
     needs: stamp
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - { name: Windows, os: windows-latest }
@@ -127,6 +131,7 @@ jobs:
   publish:
     name: Publish
     needs: [stamp, build]
+    if: ${{ !cancelled() && needs.stamp.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -145,9 +150,7 @@ jobs:
               [ -f "$name" ] || { echo "::error::$feed names $name, which was not built"; exit 1; }
             done
           done
-          for feed in latest.yml latest-mac.yml latest-linux.yml; do
-            [ -f "$feed" ] || { echo "::error::$feed is missing"; exit 1; }
-          done
+          ls latest*.yml > /dev/null 2>&1 || { echo "::error::nothing was built"; exit 1; }
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -155,7 +158,26 @@ jobs:
           BUILD_ID: ${{ needs.stamp.outputs.build_id }}
           DRAFT: ${{ inputs.draft && '--draft' || '' }}
         run: |
-          gh release create "v$VERSION" dist/* $DRAFT \
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "penrose $VERSION" --generate-notes \
-            --notes "Build $BUILD_ID. Windows: run the Setup .exe. macOS (Apple Silicon): open the .dmg. Linux (x64, preview): make the .AppImage executable and run it. Installed copies update themselves."
+          notes="Build $BUILD_ID."
+          missing=""
+          if [ -f dist/latest.yml ]; then notes="$notes
+          - **Windows:** run the \`Setup .exe\`."; else missing="$missing Windows"; fi
+          if [ -f dist/latest-mac.yml ]; then notes="$notes
+          - **macOS (Apple Silicon):** open the \`.dmg\` and drag penrose into Applications."; else missing="$missing macOS"; fi
+          if [ -f dist/latest-linux.yml ]; then notes="$notes
+          - **Linux (x64, preview):** make the \`.AppImage\` executable and run it."; else missing="$missing Linux"; fi
+          if [ -n "$missing" ]; then
+            notes="$notes
+
+          Not in this release yet:$missing."
+            echo "::warning::Published without:$missing. Re-run the failed build job to add it."
+          fi
+          notes=$(echo "$notes" | sed 's/^          //')
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "v$VERSION" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "v$VERSION" --repo "$GITHUB_REPOSITORY" --notes "$notes"
+          else
+            gh release create "v$VERSION" dist/* $DRAFT \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "penrose $VERSION" --notes "$notes"
+          fi

@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/readme/hero-dark.webp">
-    <img src="docs/readme/hero-light.webp" alt="penrose. Give your agent a phone. A real phone for your AI, with your apps on it, signed in as you. Ask in plain words. It runs the errand, and checks with you before it spends." width="100%">
+    <img src="docs/readme/hero-light.webp" alt="penrose. Give your agent a phone." width="100%">
   </picture>
 </p>
 
