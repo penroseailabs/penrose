@@ -234,6 +234,13 @@ a link you set up yourself, free, with one click and one QR code.
 
 ## Bring your own agent
 
+> [!TIP]
+> **On a Claude Max or Team plan? You may already have paid for this.** Those plans come with API credits every
+> month ($100 on Max 5x and $200 on Max 20x, as of November 2026), and they expire each month if you don’t use them.
+> penrose’s own agents can run on them: link a Claude Console account in your Claude billing settings, create a key
+> there and paste it into penrose. (The credits can’t be spent inside Claude Code or the Claude apps themselves, only
+> on a key like this one.) [How the credits work](https://platform.claude.com/docs/about-claude/api-credits-for-subscribers).
+
 Already living in Claude Code? Give it the phone. penrose installs a skill that teaches Claude when and how to use
 it, and the same tools are available to the Claude desktop app and Cowork as a local connector. Anything with a
 shell can use the `relay` command:
@@ -293,12 +300,6 @@ page where you create a key, which is a kind of password for that service. Paste
 <sub><b>What you need:</b> a Windows PC or a Mac (the Linux build is a preview), a Google account, and an AI key.
 penrose is free; the AI provider bills you for what you use. Your key is stored encrypted on your computer and is
 only ever sent to the provider it belongs to. Talking to penrose, and the calls it makes, use an OpenAI key.</sub>
-
-> [!TIP]
-> **On a Claude Max or Team plan? You may already have paid for this.** Those plans come with API credits every
-> month ($100 on Max 5x and $200 on Max 20x, as of November 2026), and they expire each month if you don’t use them. penrose can
-> run on them: link a Claude Console account in your Claude billing settings, create a key there and paste it into
-> penrose. [How the credits work](https://platform.claude.com/docs/about-claude/api-credits-for-subscribers).
 
 <br>
 
