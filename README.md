@@ -11,7 +11,7 @@
   <a href="#bring-your-own-agent"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/button-agent-dark.webp"><img src="docs/readme/button-agent-light.webp" alt="Use it from Claude Code" height="50"></picture></a>
 </p>
 
-<p align="center"><sub>Free and open source&nbsp;&nbsp;·&nbsp;&nbsp;Windows and macOS, with Linux in preview&nbsp;&nbsp;·&nbsp;&nbsp;Your computer, your accounts, your keys</sub></p>
+<p align="center"><sub>Free and open source&nbsp;&nbsp;·&nbsp;&nbsp;No extra phone to buy&nbsp;&nbsp;·&nbsp;&nbsp;Windows and macOS, with Linux in preview</sub></p>
 
 <br>
 
@@ -19,14 +19,15 @@
 
 <p align="center">
 Ask an assistant about dinner and you get a lovely paragraph. The table, the groceries and the group chat
-all live in apps on a phone, where it can’t reach.<br>So we built your AI a phone.
+all live in apps on a phone, where it can’t reach.<br>So we built your AI a phone, and put it inside your computer, right
+beside the AI that uses it.<br>No second device, no cables, nothing to buy: the phone runs in a window on your screen.
 </p>
 
 <table>
 <tr>
 <td width="33%" valign="top">
 
-**A phone inside your computer**<br>
+**A phone that runs inside your computer**<br>
 <sub>penrose is an app for your computer. It comes with its own Android phone, which runs in a window on your screen.
 There is nothing to buy, and the phone in your pocket is never touched.</sub>
 
