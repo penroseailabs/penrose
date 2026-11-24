@@ -20,6 +20,7 @@ HERE = Path(__file__).resolve().parent
 OUT = HERE.parent
 SCENES = {  # name: window size in CSS pixels (the picture is cropped to what is drawn)
     "hero": (1200, 540),
+    "setup": (1200, 700),
     "day": (1200, 560),
     "sees": (1200, 760),
     "ask": (1200, 720),

@@ -116,6 +116,61 @@
   .composer { margin-top: 4px; height: 50px; border-radius: 16px; corner-shape: squircle; display: flex; align-items: center; padding: 0 8px 0 18px; color: var(--ink-3); }
   .composer .send { margin-left: auto; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
 
+  /* ---------- where it all runs ---------- */
+  #setup { width: 1200px; padding: 50px 54px 44px; }
+  .where-row { display: grid; grid-template-columns: 250px 1fr 600px; align-items: end; gap: 0; }
+  .side { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+  .cap { text-align: center; max-width: 300px; }
+  .cap b { display: block; font-size: 18px; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .cap span { font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+  .handset.mini { width: 214px; height: 430px; border-radius: 38px; padding: 9px; margin: 0; }
+  .handset.mini .screen { border-radius: 30px; font-size: 12px; }
+  .mini-head { padding: 12px 0 14px; text-align: center; }
+  .mini-head .wordmark { font-size: 20px; }
+  .mini-chat { display: flex; flex-direction: column; gap: 12px; padding: 0 14px; line-height: 1.4; }
+  .mini-chat .you { max-width: 88%; padding: 8px 11px; border-radius: 14px; font-size: 12px; }
+  .mini-chat .back { display: flex; gap: 7px; align-items: flex-start; }
+  .mini-chat .back img { width: 18px; height: 18px; border-radius: 5px; flex: none; }
+  .mini-compose { margin: auto 12px 16px; height: 40px; border-radius: 13px; display: flex; align-items: center; padding: 0 5px 0 13px; color: var(--ink-3); font-size: 12px; }
+  .mini-compose .btn { margin-left: auto; width: 30px; height: 30px; padding: 0; border-radius: 9px; }
+  .mini-compose .btn svg.i { width: 16px; height: 16px; }
+  .link { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding: 0 22px; align-self: center; margin-bottom: 70px; }
+  .link-label { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .wire { position: relative; width: 100%; height: 46px; display: grid; place-items: center; }
+  .wire::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dashed color-mix(in oklab, var(--ink-3) 70%, transparent); }
+  .wire .lockdot { position: relative; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; color: var(--green-ink); }
+  .wire .lockdot svg.i { width: 20px; height: 20px; }
+  .link-note { font-size: 12.5px; line-height: 1.45; color: var(--ink-2); max-width: 230px; }
+  .laptop { display: flex; flex-direction: column; align-items: center; }
+  .lid { width: 580px; height: 362px; border-radius: 22px 22px 8px 8px; padding: 12px; background: linear-gradient(160deg, #3b3f46, #17191d); box-shadow: var(--e3), inset 0 1px 0 rgba(255,255,255,.18); }
+  :root[data-theme="dark"] .lid { background: linear-gradient(160deg, #4a4e56, #0d0e10); }
+  .display { width: 100%; height: 100%; border-radius: 12px 12px 4px 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 18px; }
+  .base { width: 640px; height: 16px; border-radius: 3px 3px 14px 14px; background: linear-gradient(180deg, #c9ccd2, #9fa3ab); box-shadow: var(--e2); }
+  :root[data-theme="dark"] .base { background: linear-gradient(180deg, #4b4f57, #2a2d32); }
+  .agentwin { width: 280px; border-radius: 14px; padding: 15px 16px 16px; display: flex; flex-direction: column; gap: 10px; font-size: 12.5px; }
+  .agentwin .t { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; color: var(--ink-3); letter-spacing: 0.05em; text-transform: uppercase; }
+  .agentwin .t img { width: 16px; height: 16px; border-radius: 4px; }
+  .agentwin .step { gap: 8px; }
+  .agentwin .check, .agentwin .pending { width: 14px; height: 14px; }
+  .agentwin .check svg { width: 9px; height: 9px; }
+  .hands { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink-3); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .hands svg.i { width: 18px; height: 18px; }
+  .handset.tiny { width: 140px; height: 290px; border-radius: 24px; padding: 6px; margin: 0; box-shadow: var(--e2); }
+  .handset.tiny .screen { border-radius: 19px; font-size: 9.5px; }
+  .handset.tiny .statusbar { height: 20px; font-size: 8px; padding: 4px 14px 0; }
+  .tinyapp { padding: 4px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .tinyapp b { font-size: 12px; letter-spacing: -0.02em; }
+  .tinyapp .row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eeeeec; }
+  .tinyapp .slot { display: flex; gap: 5px; flex-wrap: wrap; }
+  .tinyapp .slot span { padding: 3px 6px; border-radius: 6px; background: #eef0ec; font-weight: 600; font-size: 9px; }
+  .tinyapp .slot span.on { background: #2f6b3c; color: #fff; }
+  .tinyapp .photo { height: 64px; border-radius: 9px; background: linear-gradient(135deg, #c9784a, #8e3f2a 55%, #e6b56d); }
+  .tinyapp .stars { color: #b5762e; font-size: 9px; font-weight: 600; }
+  .tinyapp .go { margin-top: 6px; height: 26px; border-radius: 8px; background: #2f6b3c; color: #fff; display: grid; place-items: center; font-weight: 600; font-size: 10px; }
+  .facts { display: flex; justify-content: center; gap: 14px; margin-top: 34px; flex-wrap: wrap; }
+  .fact { display: inline-flex; align-items: center; gap: 9px; padding: 10px 16px 10px 12px; border-radius: 99px; font-size: 13.5px; font-weight: 550; }
+  .fact svg.i { width: 18px; height: 18px; color: var(--accent-ink); }
+
   /* ---------- a day ---------- */
   #day { width: 1200px; padding: 54px 50px 56px; }
   .moments { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; position: relative; }
@@ -342,6 +397,63 @@ const scenes = {
           </div>
         </div></div>
         <div class="composer well">Ask penrose…<span class="send btn primary" style="padding:0;height:34px">${icon("send", 'style="width:18px;height:18px"')}</span></div>
+      </div>
+    </div>`,
+
+  setup: () => `
+    <div id="setup" class="scene marble rounded" data-tiles="1200x700" data-centre="0.78,0.3">
+      <div class="where-row">
+        <div class="side">
+          <div class="handset mini"><div class="screen pocket-screen" style="align-items:stretch;padding:0">
+            <div class="statusbar" style="color:var(--ink)"><span>6:52</span><span>●●● ▮</span></div>
+            <div class="mini-head"><span class="wordmark">penrose</span></div>
+            <div class="mini-chat">
+              <div class="you" style="align-self:flex-end">Table for six on Friday around 7. Italian.</div>
+              <div class="back"><img src="${LOGO}"><span>Luigi’s has a table for six at 7:15. Book it?</span></div>
+              <div class="you" style="align-self:flex-end">Yes, and tell the group chat.</div>
+              <div class="back"><img src="${LOGO}"><span>Booking it now.</span></div>
+            </div>
+            <div class="mini-compose well">Message penrose<span class="btn primary">${icon("mic")}</span></div>
+          </div></div>
+          <div class="cap"><b>Your phone</b><span>iPhone or Android. Type to penrose, or just talk.</span></div>
+        </div>
+        <div class="link">
+          <div class="link-label">Text or talk, from anywhere</div>
+          <div class="wire"><span class="lockdot clay">${icon("lock")}</span></div>
+          <div class="link-note">End-to-end encrypted, over a link you set up on your own free account. Nobody in between can read it.</div>
+        </div>
+        <div class="side">
+          <div class="laptop">
+            <div class="lid"><div class="display marble">
+              <div class="agentwin panel">
+                <div class="t"><img src="${LOGO}">penrose</div>
+                <div class="step">${tick}Found Luigi’s, Friday 7:15, six people</div>
+                <div class="step">${tick}You said yes</div>
+                <div class="step"><span class="pending"></span>Booking, then telling the group chat</div>
+              </div>
+              <div class="hands">${icon("arrow")}taps</div>
+              <div class="handset tiny"><div class="screen">
+                <div class="statusbar"><span>6:52</span><span>●●● ▮</span></div>
+                <div class="tinyapp">
+                  <div class="photo"></div>
+                  <b>Luigi’s</b>
+                  <span class="stars">★★★★☆ · Italian</span>
+                  <div class="row"><span>Party</span><span>6 people</span></div>
+                  <div class="row"><span>Date</span><span>Fri, Nov 27</span></div>
+                  <div class="slot"><span>6:45</span><span class="on">7:15</span><span>8:15</span></div>
+                  <div class="go">Reserve for 6</div>
+                </div>
+              </div></div>
+            </div></div>
+            <div class="base"></div>
+          </div>
+          <div class="cap"><b>Your computer, at home</b><span>penrose and its phone run here, side by side. Your apps and sign-ins never leave it.</span></div>
+        </div>
+      </div>
+      <div class="facts">
+        <span class="fact clay">${icon("checked")}No extra phone to buy</span>
+        <span class="fact clay">${icon("house")}No penrose servers, no account with us</span>
+        <span class="fact clay">${icon("shield")}Only the AI model you chose sees a task, on your own key</span>
       </div>
     </div>`,
 
