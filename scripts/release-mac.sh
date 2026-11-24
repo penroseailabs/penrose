@@ -23,8 +23,14 @@ fail() { printf 'error: %s\n' "$*" >&2; exit 1; }
 [ "$(uname -m)" = arm64 ] || fail "run this on an Apple Silicon Mac (the release is for Apple Silicon)"
 command -v gh > /dev/null || fail "the GitHub CLI is missing: brew install gh, then gh auth login"
 gh auth status > /dev/null 2>&1 || fail "the GitHub CLI is not signed in: gh auth login"
+# Homebrew keeps node@22 off the PATH (it is "keg-only"): use it when it is there, the version the release builds use.
+for dir in /opt/homebrew/opt/node@22/bin /usr/local/opt/node@22/bin; do
+  [ -x "$dir/node" ] && { PATH="$dir:$PATH"; break; }
+done
 command -v node > /dev/null || fail "Node is missing: brew install node@22"
-[ "$(node -p 'process.versions.node.split(".")[0]')" -ge 22 ] || fail "Node 22 or newer is needed (node --version says $(node --version))"
+NODE_MAJOR=$(node -p 'process.versions.node.split(".")[0]' 2> /dev/null || true)
+[ -n "$NODE_MAJOR" ] || fail "node is installed but does not run (try: brew install node@22, then run this again)"
+[ "$NODE_MAJOR" -ge 22 ] || fail "Node 22 or newer is needed (node --version says $(node --version))"
 PYTHON="${RELAY_PYTHON:-$(command -v python3.14 || true)}"
 [ -n "$PYTHON" ] || fail "Python 3.14 is missing: brew install python@3.14"
 
