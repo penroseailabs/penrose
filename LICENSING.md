@@ -1,7 +1,10 @@
 # Licensing
 
-penrose is free software, released under the [GNU Affero General Public License, version 3](LICENSE) (AGPL-3.0).
-A commercial license is available for uses the AGPL does not fit.
+penrose is a complete application for individual, personal use. It is free software, released under the
+[GNU Affero General Public License, version 3](LICENSE) (AGPL-3.0).
+
+Companies that want penrose customised for enterprise use across teams, or a commercial license for uses the AGPL
+does not fit, can write to us at [penrose.ai.labs@gmail.com](mailto:penrose.ai.labs@gmail.com).
 
 ## What the AGPL lets you do
 
@@ -14,13 +17,15 @@ This is a plain-words summary, not legal advice. The [license itself](LICENSE) i
 - **Offer it as a service, on the same condition.** If people use your changed version over a network, you must
   offer them its source.
 
-## Commercial license
+## For companies: enterprise use and commercial licenses
 
-If those conditions do not fit what you are building, for example a closed-source product or service based on
-penrose, you need a commercial license. It replaces the AGPL's conditions with terms agreed with us, for a fee.
+penrose as published is built for one person and their own accounts. If your company wants it customised for
+enterprise use across teams, get in touch.
 
-To ask about one, open an issue with the **Commercial license** form. Say who you are and what you want to build;
-leave out anything confidential. We will reply there and move the conversation to email.
+If the AGPL's conditions do not fit what you are building, for example a closed-source product or service based
+on penrose, you need a commercial license. It replaces the AGPL's conditions with terms agreed with us, for a fee.
+
+For either, write to [penrose.ai.labs@gmail.com](mailto:penrose.ai.labs@gmail.com) and say who you are and what you want to do.
 
 ## Contributions
 

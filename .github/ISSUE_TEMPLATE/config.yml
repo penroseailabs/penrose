@@ -3,3 +3,6 @@ contact_links:
   - name: Report a security problem
     url: https://github.com/penroseailabs/penrose/security/advisories/new
     about: Privately, please. Not in a public issue.
+  - name: Enterprise use and commercial licenses
+    url: https://github.com/penroseailabs/penrose/blob/main/LICENSING.md
+    about: For companies. Write to penrose.ai.labs@gmail.com.

@@ -369,15 +369,23 @@ penrose checks by itself. On Windows it downloads the update and asks you to res
 new version is out and opens the download page: drag the new one into Applications over the old one. Your phone
 and your chats are kept either way.
 
-**Can I use penrose at work, or build a product on it?**
-Use it anywhere, free. If you build penrose into something you give or sell to others, the AGPL asks you to share
-your source too; if you’d rather keep it closed, ask us for a commercial license ([LICENSING.md](LICENSING.md)).
+**Can my company use penrose, or build a product on it?**
+penrose is a complete application for individual, personal use. If your company wants it customised for enterprise
+use across teams, or wants to build on it without sharing its own source, write to
+[penrose.ai.labs@gmail.com](mailto:penrose.ai.labs@gmail.com).
 
 **Which AI does it use?**
 Yours. Add a Claude, GPT or DeepSeek key and pick a model for each job in Settings, or drive the phone from
 Claude Code instead.
 
 </details>
+
+<br>
+
+## For companies
+
+penrose is a complete application for individual, personal use. If your company wants it customised for enterprise
+use across teams, write to us at [penrose.ai.labs@gmail.com](mailto:penrose.ai.labs@gmail.com).
 
 <br>
 
@@ -391,7 +399,7 @@ privately, see [SECURITY.md](SECURITY.md).
 
 penrose is open source under the GNU AGPL 3.0: use it and change it freely, and if you share a version of it or
 build it into a product, share your source under the same license. For a closed-source product, a commercial
-license is available. [LICENSING.md](LICENSING.md) has the details.
+license is available from [penrose.ai.labs@gmail.com](mailto:penrose.ai.labs@gmail.com). [LICENSING.md](LICENSING.md) has the details.
 
 <br>
 
