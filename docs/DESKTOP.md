@@ -280,7 +280,10 @@ page. `npm run dist` only builds; `npm run release` builds and uploads from your
 runners under one build ID, then publishes them together as one GitHub release, `v<version>`, so no installed copy
 ever sees half a release. Start it from the Actions tab ("Release", "Run workflow"), or push the commit to ship to
 the `release` branch (`git push origin main:release`). Installed copies pick the release up at their next check.
-Signing is switched on by adding repository secrets, with no change to the workflow: `CSC_LINK` and
+GitHub is at times out of Mac machines: the release then goes out without the Mac installer, and either "Re-run
+failed jobs" on the run adds it later, or `scripts/release-mac.sh` builds it on an Apple Silicon Mac and adds it to
+the release under the same version. Signing is switched on by adding repository secrets, with no change to the
+workflow: `CSC_LINK` and
 `CSC_KEY_PASSWORD` (a Developer ID certificate as base64 .p12) with `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and
 `APPLE_TEAM_ID` for macOS; `WIN_CSC_LINK` and `WIN_CSC_KEY_PASSWORD` for Windows.
 
