@@ -1,0 +1,7 @@
+build/
+*.keystore
+*.jks
+*.p12
+*.lineage
+signing.json
+signing/

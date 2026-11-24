@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web fixture</title>
+<style>
+  body { font: 16px sans-serif; margin: 0; padding: 12px; }
+  header { display: flex; align-items: center; gap: 12px; }
+  h1 { font-size: 20px; margin: 0; flex: 1; }
+  nav a { display: inline-flex; gap: 4px; align-items: center; }
+  button, input, select, textarea { font: inherit; padding: 6px 10px; margin: 2px; }
+  svg { width: 20px; height: 20px; }
+  ul { padding-left: 0; list-style: none; }
+  li { padding: 4px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
+  .pointer { cursor: pointer; padding: 8px; background: #eef; display: inline-block; }
+  .sw { display: inline-flex; gap: 8px; align-items: center; padding: 8px; background: #efe; position: relative; }
+  .sw input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  [role=switch] { display: inline-block; padding: 8px; background: #fee; }
+  [role=switch][aria-checked=true] { background: #fcc; }
+  #modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 10; }
+  #modal-backdrop.open { display: flex; }
+  #modal { background: #fff; padding: 20px; }
+  .spacer { height: 1400px; background: linear-gradient(#fff, #ddd); }
+  #note { border: 1px solid #888; min-height: 30px; padding: 4px; }
+  .spinner { width: 16px; height: 16px; border: 2px solid #999; border-top-color: transparent; border-radius: 50%; display: none; animation: spin 1s linear infinite; }
+  .spinner.on { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  iframe { width: 100%; height: 70px; border: 1px solid #aaa; }
+  #scroller { height: 80px; overflow: auto; border: 1px solid #aaa; }
+  #scroller div { height: 40px; }
+</style>
+</head>
+<body>
+<svg style="display:none"><symbol id="ic-cart" viewBox="0 0 10 10"><path d="M0 0h10v10z"/></symbol></svg>
+
+<header>
+  <h1>Web fixture</h1>
+  <nav>
+    <a href="/cart" aria-label="Cart"><svg><use href="#ic-cart"/></svg><span id="cart-count">0</span></a>
+  </nav>
+  <button data-testid="menu-button"><i class="fa fa-bars"></i></button>
+</header>
+
+<form id="search-form">
+  <input type="search" name="q" placeholder="Search products" aria-label="Search">
+  <button type="submit">Go</button>
+</form>
+<p id="search-result">No search yet</p>
+
+<label for="coupon">Coupon code</label>
+<input id="coupon" placeholder="CODE">
+<p id="coupon-model">model: (empty)</p>
+<input id="pw" type="password" aria-label="Password" value="hunter2">
+
+<h2>Products</h2>
+<ul id="products">
+  <li><span>Lindt Excellence Orange</span><button class="add">ADD</button></li>
+  <li><span>Ferrero Rocher</span><button class="add">ADD</button></li>
+  <li><span>Toblerone</span><button class="add">ADD</button></li>
+  <li><span>Cadbury Silk</span><button class="add">ADD</button></li>
+  <li><span>Kinder Joy</span><button class="add">ADD</button></li>
+</ul>
+<p id="cart-status">Cart is empty</p>
+<button id="load-more">Load more</button> <span class="spinner" id="spinner"></span>
+
+<div class="pointer" id="details-open">Open details</div>
+<p id="details" style="display:none">Details are shown</p>
+
+<p>
+  <select id="size" name="size" aria-label="Size">
+    <option value="s">Small</option><option value="m">Medium</option><option value="l">Large</option>
+  </select>
+  <span id="size-out">size: none</span>
+</p>
+
+<p>
+  <label class="sw"><input type="checkbox" id="newsletter"><span>Newsletter</span></label>
+  <label><input type="radio" name="plan" value="basic" id="plan-basic"> Basic</label>
+  <label><input type="radio" name="plan" value="pro" id="plan-pro"> Pro</label>
+  <span role="switch" aria-checked="false" tabindex="0" id="dark-switch">Dark mode</span>
+</p>
+<p id="prefs-out">prefs: none</p>
+
+<x-card id="card"></x-card>
+
+<iframe id="same-frame" title="Same origin frame" srcdoc="<body style='margin:4px'><p>Inside the frame</p><button id='frame-btn' onclick=&quot;document.body.insertAdjacentHTML('afterbegin','<p>frame clicked</p>')&quot;>Frame button</button></body>"></iframe>
+<iframe id="cross-frame" title="Payment frame" src="data:text/html,<button>Pay in frame</button>"></iframe>
+
+<p><button id="open-modal">Open modal</button> <button id="alert-btn">Show alert</button> <button disabled>Pay now</button></p>
+<div id="modal-backdrop"><div id="modal" role="dialog" aria-modal="true" aria-label="Subscribe">
+  <p>Subscribe to our newsletter?</p><button id="modal-close">No thanks</button></div></div>
+
+<div id="note" contenteditable="true" role="textbox" aria-label="Note"></div>
+<p id="note-out">note: empty</p>
+
+<table id="orders"><tbody>
+  <tr><td>Order 1001</td><td><button class="reorder">Reorder</button></td></tr>
+  <tr><td>Order 1002</td><td><button class="reorder">Reorder</button></td></tr>
+</tbody></table>
+
+<div id="scroller"><div>Row A</div><div>Row B</div><div>Row C</div><div>Row D</div><div>Row E</div></div>
+
+<div class="spacer">Long spacer</div>
+<button id="far-button">Far away button</button>
+<p id="far-status">far: untouched</p>
+
+<script>
+  var $ = function (id) { return document.getElementById(id); };
+  var cart = 0;
+  document.querySelectorAll('.add').forEach(function (b) {
+    b.addEventListener('click', function () {
+      cart++;
+      var name = b.parentElement.firstElementChild.textContent;
+      $('cart-count').textContent = cart;
+      $('cart-status').textContent = 'Added ' + name + ' (' + cart + ' in cart)';
+    });
+  });
+  $('search-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    $('search-result').textContent = 'Searched: ' + e.target.q.value;
+  });
+  // React-style controlled input: the node's own `value` is shadowed to track writes, so only a
+  // write through the prototype setter looks like user input.
+  (function () {
+    var input = $('coupon'), tracked = '';
+    var proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    Object.defineProperty(input, 'value', {
+      get: function () { return proto.get.call(this); },
+      set: function (v) { tracked = String(v); proto.set.call(this, v); }
+    });
+    input.addEventListener('input', function () {
+      if (proto.get.call(input) === tracked) return;  // framework-originated write: ignore
+      tracked = proto.get.call(input);
+      $('coupon-model').textContent = 'model: ' + tracked;
+    });
+  })();
+  $('details-open').addEventListener('click', function () {
+    $('details').style.display = 'block';
+  });
+  $('size').addEventListener('change', function (e) { $('size-out').textContent = 'size: ' + e.target.value; });
+  function prefs() {
+    $('prefs-out').textContent = 'prefs: newsletter=' + $('newsletter').checked +
+      ' plan=' + (document.querySelector('input[name=plan]:checked') || {value: 'none'}).value +
+      ' dark=' + $('dark-switch').getAttribute('aria-checked');
+  }
+  document.querySelectorAll('#newsletter, input[name=plan]').forEach(function (e) { e.addEventListener('change', prefs); });
+  $('dark-switch').addEventListener('click', function () {
+    this.setAttribute('aria-checked', this.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+    prefs();
+  });
+  $('open-modal').addEventListener('click', function () { $('modal-backdrop').classList.add('open'); });
+  $('modal-close').addEventListener('click', function () { $('modal-backdrop').classList.remove('open'); });
+  $('alert-btn').addEventListener('click', function () { alert('Fixture alert'); });
+  $('note').addEventListener('input', function () { $('note-out').textContent = 'note: ' + this.textContent; });
+  $('far-button').addEventListener('click', function () { $('far-status').textContent = 'far: clicked'; });
+  document.querySelectorAll('.reorder').forEach(function (b) {
+    b.addEventListener('click', function () { b.textContent = 'Reordered'; });
+  });
+  $('load-more').addEventListener('click', function () {
+    $('spinner').classList.add('on');
+    setTimeout(function () {
+      $('spinner').classList.remove('on');
+      var li = document.createElement('li');
+      li.innerHTML = '<span>Milka Alpine</span><button class="add">ADD</button>';
+      $('products').appendChild(li);
+    }, 700);
+  });
+  customElements.define('x-card', class extends HTMLElement {
+    constructor() {
+      super();
+      var r = this.attachShadow({mode: 'open'});
+      r.innerHTML = '<div style="padding:8px;background:#ffd"><p>Shadow card</p><button id="shadow-btn">Shadow action</button><p id="shadow-out"></p></div>';
+      r.getElementById('shadow-btn').addEventListener('click', function () { r.getElementById('shadow-out').textContent = 'shadow clicked'; });
+    }
+  });
+</script>
+</body>
+</html>

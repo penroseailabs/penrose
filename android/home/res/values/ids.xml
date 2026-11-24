@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Named so the bridge dump reads id=search / id=results / id=status. -->
+    <item type="id" name="search" />
+    <item type="id" name="results" />
+    <item type="id" name="status" />
+    <item type="id" name="mail_progress" />
+    <!-- Accessibility ids of a result's 2nd to 6th action (ResultsList). -->
+    <item type="id" name="action_2" />
+    <item type="id" name="action_3" />
+    <item type="id" name="action_4" />
+    <item type="id" name="action_5" />
+    <item type="id" name="action_6" />
+</resources>

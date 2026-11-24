@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="app.relay.bridge"
+    android:versionCode="25"
+    android:versionName="0.5.21">
+
+    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="36" />
+
+    <application android:label="penrose bridge" android:hasCode="true">
+        <service android:name=".Notifier" android:exported="true" android:label="penrose bridge notifications"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+        <meta-data android:name="xposedmodule" android:value="true" />
+        <meta-data android:name="xposeddescription"
+            android:value="Exposes the live view tree, toasts, dialogs, network, settle state, app preferences and notifications to the penrose playground over a local socket." />
+        <meta-data android:name="xposedminversion" android:value="82" />
+    </application>
+</manifest>

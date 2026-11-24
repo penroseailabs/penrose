@@ -1,0 +1,5 @@
+# Phone code is built and run on Android: LF everywhere, whatever the checkout.
+* text=auto eol=lf
+*.png binary
+*.zip binary
+*.apk binary

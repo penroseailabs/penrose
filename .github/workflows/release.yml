@@ -1,0 +1,161 @@
+name: Release
+
+# Builds penrose for Windows, macOS and Linux under one build ID and publishes the three together as one GitHub
+# release. Installed copies update from that release (docs/DESKTOP.md, "Releases and updates").
+#
+# Start it from the Actions tab (Release, Run workflow), or push the commit to ship to the `release` branch:
+#   git push origin main:release
+
+on:
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: Keep it a draft (nobody is updated until you publish it on the Releases page)
+        type: boolean
+        default: false
+  push:
+    branches: [release]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  stamp:
+    name: Build ID
+    runs-on: ubuntu-latest
+    outputs:
+      build_id: ${{ steps.stamp.outputs.build_id }}
+      version: ${{ steps.stamp.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: stamp
+        run: |
+          build_id=$(date -u +%Y%m%d%H%M%S)
+          version=$(RELAY_BUILD_ID=$build_id node -e "console.log(require('./desktop/scripts/release').release().version)")
+          echo "build_id=$build_id" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "penrose $version (build $build_id)" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Build (${{ matrix.name }})
+    needs: stamp
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { name: Windows, os: windows-latest }
+          - { name: macOS, os: macos-latest }
+          - { name: Linux, os: ubuntu-latest }
+    runs-on: ${{ matrix.os }}
+    env:
+      RELAY_BUILD_ID: ${{ needs.stamp.outputs.build_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            desktop/package-lock.json
+            frontend/package-lock.json
+            coordinator/package-lock.json
+      - id: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install
+        shell: bash
+        run: |
+          npm --prefix desktop ci --no-audit --no-fund
+          npm --prefix frontend ci --no-audit --no-fund
+
+      # Signing is optional. With these repository secrets the installers are signed (and the Mac one notarized);
+      # without them the build is unsigned and still installs and updates, as docs/DESKTOP.md describes.
+      - name: Signing certificates, if the repository has them
+        shell: bash
+        env:
+          MAC_CSC_LINK: ${{ secrets.CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          MAC_APPLE_ID: ${{ secrets.APPLE_ID }}
+          MAC_APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          MAC_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          WIN_CSC_LINK_VALUE: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD_VALUE: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          put() { if [ -n "$2" ]; then { echo "$1<<__PENROSE__"; echo "$2"; echo "__PENROSE__"; } >> "$GITHUB_ENV"; fi; }
+          if [ "$RUNNER_OS" = macOS ] && [ -n "$MAC_CSC_LINK" ]; then
+            put CSC_LINK "$MAC_CSC_LINK"
+            put CSC_KEY_PASSWORD "$MAC_CSC_KEY_PASSWORD"
+            put APPLE_ID "$MAC_APPLE_ID"
+            put APPLE_APP_SPECIFIC_PASSWORD "$MAC_APPLE_APP_SPECIFIC_PASSWORD"
+            put APPLE_TEAM_ID "$MAC_APPLE_TEAM_ID"
+          fi
+          if [ "$RUNNER_OS" = Windows ] && [ -n "$WIN_CSC_LINK_VALUE" ]; then
+            put WIN_CSC_LINK "$WIN_CSC_LINK_VALUE"
+            put WIN_CSC_KEY_PASSWORD "$WIN_CSC_KEY_PASSWORD_VALUE"
+          fi
+
+      # The web UI, the Python services (PyInstaller), the phone-app coordinator, then the installer into desktop/dist.
+      - name: Build
+        working-directory: desktop
+        env:
+          RELAY_PYTHON: ${{ steps.python.outputs.python-path }}
+        run: npm run dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: penrose-${{ matrix.name }}
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0
+          path: |
+            desktop/dist/*.exe
+            desktop/dist/*.dmg
+            desktop/dist/*.zip
+            desktop/dist/*.AppImage
+            desktop/dist/*.blockmap
+            desktop/dist/latest*.yml
+
+  publish:
+    name: Publish
+    needs: [stamp, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      # The update feed names each installer; a name that is not among the files would break updates for everyone.
+      - name: Check the update feed against the files
+        run: |
+          cd dist
+          ls -l
+          for feed in latest*.yml; do
+            for name in $(grep -E '^\s*(- url|path):' "$feed" | sed -E 's/^\s*(- url|path):\s*//' | sort -u); do
+              [ -f "$name" ] || { echo "::error::$feed names $name, which was not built"; exit 1; }
+            done
+          done
+          for feed in latest.yml latest-mac.yml latest-linux.yml; do
+            [ -f "$feed" ] || { echo "::error::$feed is missing"; exit 1; }
+          done
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.stamp.outputs.version }}
+          BUILD_ID: ${{ needs.stamp.outputs.build_id }}
+          DRAFT: ${{ inputs.draft && '--draft' || '' }}
+        run: |
+          gh release create "v$VERSION" dist/* $DRAFT \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "penrose $VERSION" --generate-notes \
+            --notes "Build $BUILD_ID. Windows: run the Setup .exe. macOS (Apple Silicon): open the .dmg. Linux (x64, preview): make the .AppImage executable and run it. Installed copies update themselves."

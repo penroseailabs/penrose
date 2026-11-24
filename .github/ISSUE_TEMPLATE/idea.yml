@@ -1,0 +1,17 @@
+name: An idea
+description: Something penrose should do, or do better
+labels: [idea]
+body:
+  - type: textarea
+    id: situation
+    attributes:
+      label: What were you trying to get done?
+      description: The situation you were in, not only the feature you have in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would have helped?
+    validations:
+      required: true

@@ -1,0 +1,150 @@
+{
+  "name": "relay-desktop",
+  "productName": "penrose",
+  "version": "0.1.0",
+  "description": "penrose: an AI agent that uses Android apps for you, with the phone built in.",
+  "private": true,
+  "main": "src/main.js",
+  "author": "penrose",
+  "license": "AGPL-3.0-only",
+  "homepage": "https://github.com/penroseailabs/penrose",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/penroseailabs/penrose.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dev": "node scripts/dev.js",
+    "test": "node --test \"test/*.test.js\"",
+    "build:frontend": "npm --prefix ../frontend run build && npm --prefix ../frontend run build:companion",
+    "build:coordinator": "npm --prefix ../coordinator ci --omit=dev --no-audit --no-fund",
+    "build:server": "node scripts/build-server.js",
+    "fetch:vendor": "node scripts/fetch-vendor.js",
+    "prepare:all": "npm run build:frontend && npm run build:coordinator && npm run build:server && npm run fetch:vendor",
+    "dist": "npm run prepare:all && node scripts/dist.js",
+    "dist:dir": "npm run prepare:all && node scripts/dist.js --dir",
+    "release": "npm run prepare:all && node scripts/dist.js --publish",
+    "release:id": "node scripts/release.js"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "devDependencies": {
+    "electron": "^44.9.3",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "dev.relay.desktop",
+    "productName": "penrose",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "penroseailabs",
+      "repo": "penrose"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "electronLanguages": [
+      "en-US"
+    ],
+    "compression": "maximum",
+    "extraResources": [
+      {
+        "from": "../backend/dist/relay-server",
+        "to": "server"
+      },
+      {
+        "from": "../frontend/dist",
+        "to": "frontend"
+      },
+      {
+        "from": "assets/android",
+        "to": "android"
+      },
+      {
+        "from": "build/icon-win.png",
+        "to": "tray.png"
+      },
+      {
+        "from": "vendor/bin",
+        "to": "bin"
+      },
+      {
+        "from": "../coordinator",
+        "to": "coordinator",
+        "filter": [
+          "src/*.ts",
+          "wrangler.toml",
+          "node_modules/**/*",
+          "!node_modules/@cloudflare/workerd-*/**",
+          "!node_modules/workerd/**",
+          "!node_modules/typescript/**",
+          "!node_modules/@cloudflare/workers-types/**"
+        ]
+      },
+      {
+        "from": "../frontend/dist-companion",
+        "to": "companion"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon-win.png"
+    },
+    "nsis": {
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp"
+    },
+    "dmg": {
+      "background": "build/dmg-background.png",
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 150,
+          "y": 190
+        },
+        {
+          "x": 390,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSLocationUsageDescription": "penrose keeps its phone at your location, so apps show what is near you.",
+        "NSLocationWhenInUseUsageDescription": "penrose keeps its phone at your location, so apps show what is near you.",
+        "NSMicrophoneUsageDescription": "penrose listens when you talk to it in voice mode."
+      }
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    }
+  }
+}

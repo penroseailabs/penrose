@@ -1,0 +1,28 @@
+name: Commercial license
+description: Ask about using penrose under terms other than the AGPL
+labels: [licensing]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        penrose is free under the GNU AGPL 3.0 (see LICENSING.md). Use this form if you want to build something the AGPL does not fit, such as a closed-source product.
+        This issue is public: leave out anything confidential. We will reply here and move to email.
+  - type: input
+    id: who
+    attributes:
+      label: Company or name
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What do you want to build or do with penrose?
+    validations:
+      required: true
+  - type: input
+    id: contact
+    attributes:
+      label: How should we reach you?
+      description: A work email address or a link to a contact page.
+    validations:
+      required: true

@@ -1,0 +1,39 @@
+penrose
+Copyright (C) 2026 Penrose AI
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License, version 3, as published by
+the Free Software Foundation (see LICENSE). It is distributed in the hope that
+it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+A commercial license is available for uses the AGPL does not fit, and the name
+and logo are not licensed: see LICENSING.md.
+
+Third-party software in this repository
+---------------------------------------
+
+backend/app/bridge/autoconsent.js
+  A build of @duckduckgo/autoconsent (https://github.com/duckduckgo/autoconsent),
+  Copyright DuckDuckGo, licensed under the Mozilla Public License 2.0
+  (https://www.mozilla.org/MPL/2.0/). The file is used unmodified apart from
+  bundling; its source is available at the address above.
+
+Third-party software that penrose downloads when it sets up its phone
+----------------------------------------------------------------------
+
+These are not part of this repository or of penrose's installers. penrose
+downloads them from their publishers on the user's computer:
+
+  The Android SDK tools, emulator and system image, from Google, under the
+  Android Software Development Kit License Agreement, which the user accepts
+  during setup.
+  Magisk (https://github.com/topjohnwu/Magisk), GPL-3.0.
+  Vector / LSPosed, GPL-3.0.
+  rootAVD, GPL-3.0.
+  Eclipse Temurin (OpenJDK), GPL-2.0 with the Classpath Exception.
+  apkeep (https://github.com/EFForg/apkeep), MIT, bundled in the installers.
+
+The installers also include the open-source packages listed in
+backend/requirements.txt and in the package-lock.json files, under their own
+licenses.

@@ -1,0 +1,489 @@
+/* Developer mode only. The internal views keep their original look on a fixed light surface of their own,
+   so they read the same in either theme. Extracted from the pre-redesign stylesheet. */
+@import "@xyflow/react/dist/style.css";
+
+.sheet.developer { width: min(1100px, 94vw); height: min(820px, 90vh); display: flex; flex-direction: column; gap: 12px; }
+.sheet.developer .seg { align-self: flex-start; }
+.dev-node { font: 11px/1.5 var(--mono); white-space: pre-wrap; max-height: 320px; overflow: auto; background: #f4f5f4; border-radius: 8px; padding: 10px; }
+
+.dev-view {
+  flex: 1; min-height: 0; padding: 14px; border-radius: 12px; background: #fbfbfa; color: #26353c;
+  font-size: 13px; --green: #116b59; --muted: #899299; --line: #e9edef; --serif: #26383c;
+  box-shadow: var(--well-in);
+.eyebrow {
+  font-size: 9px;
+  letter-spacing: 1.55px;
+  font-weight: 650;
+  color: #8c9999;
+}
+.welcome > .eyebrow {
+  color: #6d9385;
+  font-size: 9px;
+}
+
+.subtle {
+  font-size: 9px;
+  color: #a6afac;
+}
+.pipeline {
+  margin: 21px 0 25px;
+}
+.pipeline-item {
+  display: block;
+  position: relative;
+  padding-bottom: 24px;
+}
+.pipeline-item:last-child {
+  padding-bottom: 0;
+}
+.pipeline-item:not(:last-child):before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 25px;
+  height: calc(100% - 28px);
+  width: 1px;
+  background: #e3eae5;
+}
+.pipeline-marker {
+  display: grid;
+  place-items: center;
+  font-size: 8px;
+  border: 1px solid #e1e8e3;
+  color: #aab5af;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: #f7faf8;
+  flex-shrink: 0;
+}
+.pipeline-item strong {
+  display: block;
+  color: #98a59d;
+  font-weight: 500;
+  font-size: 10px;
+  margin-top: 1px;
+}
+.pipeline-item small {
+  display: block;
+  color: #b1bab4;
+  font-size: 8px;
+  margin-top: 5px;
+  line-height: 1.4;
+}
+.pipeline-item.reached strong {
+  color: #386c52;
+}
+.pipeline-item.reached .pipeline-marker {
+  background: #e8f3ec;
+  color: #568867;
+  border-color: #cddfcf;
+}
+.pipeline-header > svg {
+  margin-left: auto;
+  color: #609c7c;
+}
+.pipeline-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.pipeline-header::-webkit-details-marker { display: none; }
+.pipeline-header:focus-visible { outline: 2px solid #568867; outline-offset: 4px; }
+.pipeline-header > div { flex: 1; min-width: 0; }
+.pipeline-item[open] > summary .workflow-chevron { transform: rotate(180deg); }
+.workflow-body { margin: 12px 0 0 33px; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.workflow-call { border: 1px solid #e1e8e3; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #fff; }
+.workflow-call-heading { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.workflow-call-heading span { margin-left: auto; font-size: 10px; color: #668274; }
+.workflow-body h4 { font-size: 10px; color: #668274; margin: 12px 0 4px; }
+.workflow-body p { margin: 5px 0; }
+.workflow-body pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; font-size: 10px; }
+.workflow-body summary { cursor: pointer; font-size: 11px; color: #386c52; }
+.workflow-tool { padding: 8px 0; border-top: 1px solid #e1e8e3; }
+.structured-output, .workflow-tools { margin-top: 10px; }
+.empty-activity {
+  display: flex;
+  gap: 10px;
+  padding: 20px 0;
+}
+.empty-activity > span {
+  display: block;
+  flex-shrink: 0;
+  border: 1px solid #dce5df;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 4px;
+}
+.empty-activity p {
+  color: #a8b3ab;
+  font-size: 9px;
+  line-height: 1.8;
+  margin: 0;
+}
+.error-text {
+  font-size: 11px;
+  color: #ae6557;
+  line-height: 1.6;
+}
+
+.event pre {
+  font-size: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  color: #6e8073;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.dag-canvas {
+  height: 320px;
+  border: 1px solid #e3e9e6;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 16px;
+  background: #f8fbf9;
+}
+.dag-label {
+  display: grid;
+  gap: 7px;
+}
+.dag-label strong {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #425b4d;
+  font-weight: 500;
+}
+.dag-label small {
+  font-size: 8px;
+  color: #99aa9d;
+}
+.dag-label .eyebrow {
+  font-size: 7px;
+}
+
+.verification {
+  display: flex;
+  gap: 9px;
+  padding: 12px;
+  background: #fbf3e9;
+  border-radius: 7px;
+  font-size: 10px;
+  margin-bottom: 15px;
+}
+.verification.passed {
+  background: #eaf4ed;
+}
+.verification svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.verification p {
+  font-size: 10px;
+  line-height: 1.6;
+  margin: 5px 0 0;
+}
+
+.trace {
+  margin-top: 10px;
+  font-size: 11px;
+}
+.trace-filters {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.trace-filters button,
+.trace-filters select {
+  font: inherit;
+  font-size: 10px;
+  padding: 3px 9px;
+  border: 1px solid #e1e8e3;
+  border-radius: 999px;
+  background: white;
+  color: #6d8174;
+  cursor: pointer;
+}
+.trace-filters button.selected {
+  background: #eef5f0;
+  border-color: #b9d3c1;
+  color: var(--green);
+  font-weight: 600;
+}
+.trace-filters select {
+  margin-left: auto;
+  max-width: 160px;
+}
+.trace-row {
+  border-bottom: 1px solid #edf1ee;
+}
+.trace-row > summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 7px 2px;
+  cursor: pointer;
+  list-style: none;
+}
+.trace-row > summary::-webkit-details-marker {
+  display: none;
+}
+.trace-row > summary:hover {
+  background: #f7faf8;
+}
+.trace-status,
+.trace-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #88ac95;
+}
+.trace-icon {
+  color: #9aa8a0;
+}
+.trace-row.running .trace-status {
+  color: #3071dd;
+}
+.trace-row.error .trace-status,
+.trace-row.error .trace-icon {
+  color: #c0604c;
+}
+.trace-row.info .trace-status {
+  color: #9aa8a0;
+}
+.trace-heading {
+  flex: 1;
+  min-width: 0;
+}
+.trace-heading strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  color: #4f6357;
+  font-size: 11px;
+}
+.trace-heading em {
+  font-style: normal;
+  font-weight: 450;
+  color: #8a9a90;
+  background: #f1f5f2;
+  border-radius: 4px;
+  padding: 0 5px;
+  margin-left: 6px;
+  font-size: 10px;
+}
+.trace-heading small {
+  display: block;
+  margin-top: 2px;
+  color: #8c9a91;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trace-row.error .trace-heading small {
+  color: #ae6557;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.trace-row.adb .trace-heading small {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.trace-row time {
+  font-size: 9px;
+  color: #a8b4aa;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+.trace-chevron {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #b3beb7;
+  transition: transform 0.15s;
+}
+.trace-row[open] > summary .trace-chevron {
+  transform: rotate(90deg);
+}
+.trace-body {
+  margin: 0 0 8px 20px;
+  padding: 8px 10px;
+  background: #f5f8f6;
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.trace-body p {
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.trace-field > span {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9aa8a0;
+  margin-bottom: 3px;
+}
+.trace-field > div {
+  color: #4f6357;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.trace-field p {
+  margin: 0 0 4px;
+}
+.trace-code,
+.trace-thinking pre,
+.trace-raw pre {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  background: white;
+  border: 1px solid #e6ece8;
+  border-radius: 5px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 220px;
+  overflow: auto;
+  color: #4f6357;
+}
+.trace-code.error {
+  color: #ae6557;
+}
+.trace-kind {
+  font-size: 10px;
+  background: #e6f0ea;
+  color: var(--green);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.trace-thinking > summary,
+.trace-raw > summary {
+  cursor: pointer;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  color: #7c8c83;
+  font-size: 10px;
+}
+.trace-thinking > summary small {
+  margin-left: auto;
+  color: #a8b4aa;
+}
+.trace-thinking pre {
+  color: #6f7f76;
+  font-style: italic;
+}
+.trace-actions {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 3px;
+  color: #4f6357;
+  line-height: 1.45;
+}
+.trace-actions code {
+  font-size: 9px;
+  color: #7c8c83;
+}
+.trace-actions li.failed {
+  color: #ae6557;
+}
+.trace-actions .trace-outcome {
+  display: block;
+  color: #7c8c83;
+  overflow-wrap: anywhere;
+}
+.trace-shot {
+  display: block;
+  max-width: 100%;
+  max-height: 300px;
+  border: 1px solid #e6ece8;
+  border-radius: 6px;
+  background: white;
+}
+.ui-turn {
+  border: 1px solid #e6ece8;
+  border-left: 3px solid #c9a15b;
+  border-radius: 5px;
+  background: white;
+  margin-top: 4px;
+  min-width: 0;
+}
+.ui-turn.acted {
+  border-left-color: var(--green);
+}
+.ui-turn.error {
+  border-left-color: #ae6557;
+}
+.ui-turn > summary {
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 5px 8px;
+  font-size: 10px;
+  color: #4f6357;
+}
+.ui-turn > summary .ui-pick {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-turn > summary em {
+  font-style: normal;
+  font-weight: 600;
+}
+.ui-turn > summary small {
+  color: #9aa8a0;
+  white-space: nowrap;
+}
+.ui-turn.error .ui-pick {
+  color: #ae6557;
+}
+.ui-body {
+  display: grid;
+  gap: 8px;
+  padding: 2px 8px 8px;
+  min-width: 0;
+}
+
+.ui-turn,
+.ui-body,
+.ui-body > *,
+.trace-field {
+  min-width: 0;
+  max-width: 100%;
+}
+.trace-field > div {
+  min-width: 0;
+}
+
+.trace-copy {
+  margin-left: auto;
+  font-size: 9px;
+  padding: 0 6px;
+  border: 1px solid #d9e6df;
+  border-radius: 4px;
+  background: white;
+  color: #7c8c83;
+  cursor: pointer;
+}
+
+}

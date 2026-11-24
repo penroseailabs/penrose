@@ -1,0 +1,1164 @@
+/* Voice mode: waves for who is speaking, a line of what was heard or said over them, two big keys and a call card.
+   The look is the window's own (tokens.css); colour only where it means something: the voices, and the keys' state. */
+
+.voice {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 16px calc(env(safe-area-inset-bottom, 0px) + 18px);
+  /* the background is the conversation's (.convo, app.css) */
+  color: var(--ink);
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+.voice-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+}
+.voice-top .ib {
+  width: 32px;
+  height: 32px;
+}
+.voice-brand {
+  font-size: var(--fs-3);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink-3);
+}
+
+/* The middle of the screen. Its parts are placed, not stacked, so the waves never move: the hint a quiet line at
+   the top, the waves (Waves.tsx) edge to edge with their middle at --wave, what was heard or said starting just under
+   that middle so the lower strands run over it, and a tap anywhere to stop Relay. The voices' colours: the user
+   green, Relay electric blue (the keys below use the same). */
+.voice {
+  --you: #22c55e;
+  --relay: #2f7bff;
+  --muted: #ef4444;
+}
+.voice-main {
+  --wave: 40%;
+  position: relative;
+  min-height: 0;
+  text-align: center;
+}
+.voice-waves {
+  position: absolute;
+  left: -16px;
+  right: -16px;
+  top: calc(var(--wave) - 110px);
+  width: calc(100% + 32px);
+  height: 220px;
+}
+.voice-stage-tap {
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+  background: none;
+}
+.voice-stage-tap:disabled {
+  cursor: default;
+}
+.voice-words {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: calc(var(--wave) + 18px);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+  /* Legible where the strands cross the words, without a box behind them. */
+  text-shadow:
+    0 0 14px var(--canvas),
+    0 0 6px var(--canvas),
+    0 1px 2px var(--canvas);
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice * {
+    animation: none !important;
+  }
+}
+
+.voice-status {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  font-size: var(--fs-2);
+  color: var(--ink-3);
+  pointer-events: none;
+}
+.voice-line {
+  margin: 0;
+  max-width: 34ch;
+  font-size: var(--fs-5);
+  line-height: 1.45;
+  color: var(--ink);
+  /* Three lines, newest at the bottom: long words roll up like captions instead of being cut off at the end. */
+  max-height: calc(1.45em * 3);
+  /* The window keeps its three lines whether there are words or not, so what sits under it (what penrose is talking
+     about) never moves as the status changes and captions come and go. Short words sit at the top, under the waves;
+     once they overflow, the newest stays at the bottom. */
+  min-height: calc(1.45em * 3);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+.voice-line.is-long {
+  justify-content: flex-end;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 1.2em);
+  mask-image: linear-gradient(to bottom, transparent, #000 1.2em);
+}
+.voice-line.is-error {
+  color: var(--red-ink);
+  font-size: var(--fs-3);
+}
+.voice.listening .voice-line {
+  color: var(--ink-3);
+}
+.voice-focus {
+  margin: 0;
+  font-size: var(--fs-2);
+  color: var(--ink-3);
+}
+.voice-focus b,
+.voice-focus-open {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+/* The chat being talked about, one tap from opening (the words' area lets taps through; this takes its own). */
+.voice-focus-open {
+  pointer-events: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.voice-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+}
+/* A call's key, big: the microphone. The colour is the state, so it reads at a glance: red while muted and green
+   while Relay can hear. Where the voice plays is the small audio menu beside the tools. A key is a clay disc, as the
+   buttons everywhere else are: lit from the top left, raised off the screen, pressed in under a finger. The
+   microphone's disc is the state's colour in clay. */
+.voice-keys {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 28px;
+}
+/* On a call there are two big keys (mute, end) between chat and add: all four fit a narrow phone. */
+.voice-keys.on-call {
+  gap: 14px;
+}
+.voice-keys.on-call .vkey-face {
+  zoom: 0.84;
+}
+/* Chat and add: the same keys, smaller, either side of the mic. They are not a state, so their clay is plain. */
+.vkey.small {
+  margin-top: 16px;
+  gap: 6px;
+}
+.vkey.small .vkey-face {
+  zoom: 0.68; /* the whole key scales together: its bevels and shadows too */
+  color: var(--ink-2);
+}
+.vkey.small .vkey-label {
+  font-size: var(--fs-2, 12px);
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.voice-keys .popover {
+  display: flex;
+}
+.vkey {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink-2);
+}
+.vkey-face {
+  --key: var(--ink-3);
+  position: relative;
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--ink-2);
+  background: var(--clay);
+  box-shadow: var(--e2);
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease), background 0.25s var(--ease), color 0.25s var(--ease);
+}
+.vkey-glyph {
+  position: relative;
+  display: grid;
+}
+.vkey.mic.is-off .vkey-face {
+  --key: var(--muted);
+}
+.vkey.mic.is-live .vkey-face,
+.vkey.call .vkey-face {
+  --key: var(--you);
+}
+.vkey.end .vkey-face {
+  --key: var(--muted);
+}
+/* A call that is ringing: three dots, one after the other (in the Call key, and after the line that says so). */
+.voice-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 5px;
+}
+.voice-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: voice-dot 1.2s ease-in-out infinite;
+}
+.voice-dots i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.voice-dots i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.vkey-glyph .voice-dots {
+  gap: 7px;
+  margin: 0;
+}
+.vkey-glyph .voice-dots i {
+  width: 9px;
+  height: 9px;
+}
+@keyframes voice-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-dots i {
+    animation-name: none;
+  }
+}
+.voice-text {
+  margin-top: 4px;
+  gap: 6px;
+}
+/* The microphone: clay in the state's colour, the way a primary button is the accent's (base.css), its shade falling
+   on the screen in the same colour. */
+.vkey.is-off.mic .vkey-face,
+.vkey.is-live .vkey-face {
+  color: #fff;
+  background: linear-gradient(160deg, color-mix(in oklab, var(--key) calc(100% - 16% * var(--k)), white), var(--key));
+  box-shadow: -2px -2px 6px var(--hi), 2px 3.5px 9px color-mix(in oklab, var(--key) 38%, transparent),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.26), inset 0 -2px 3px rgba(0, 0, 0, 0.08);
+}
+.vkey.is-off.mic .vkey-glyph,
+.vkey.is-live .vkey-glyph {
+  filter: drop-shadow(0 1px 1px color-mix(in oklab, var(--key) 60%, #000));
+}
+.vkey-label {
+  font-size: var(--fs-3);
+  font-weight: 600;
+}
+.vkey.mic.is-off .vkey-label {
+  color: var(--muted);
+}
+.vkey.mic.is-live .vkey-label {
+  color: var(--green-ink);
+}
+.vkey:active:not(:disabled) .vkey-face {
+  transform: scale(0.95);
+  background: var(--well);
+  box-shadow: var(--pressed);
+}
+.vkey.is-off.mic:active:not(:disabled) .vkey-face,
+.vkey.is-live:active:not(:disabled) .vkey-face {
+  background: var(--key);
+  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.2), inset -1.5px -1.5px 3px rgba(255, 255, 255, 0.2);
+}
+.vkey:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.voice-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.voice-tools .grow {
+  flex: 1;
+}
+.voice-top-space {
+  width: 32px;
+  height: 32px;
+}
+
+/* The call: a card that rises from the bottom, as a call would, and rings until picked up. */
+/* The one question about ringing in the background (companion/push.ts), under the status. */
+.voice-offer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  z-index: 1;
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 14px 16px 12px;
+  border-radius: var(--r-4);
+  background: var(--clay);
+  box-shadow: var(--e2);
+  color: var(--ink-2);
+  animation: call-rise 0.35s var(--ease);
+}
+.voice-offer p {
+  margin: 0;
+  font-size: var(--fs-2);
+  text-align: center;
+}
+.voice-offer-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* What sessions have for the user, waiting quietly: one card per session, as notifications sit on a lock screen. The
+   tray scrolls (three show; the fourth peeks) and its cards swipe (SwipeCard.tsx, base styles in app.css): right sends one away ("later"),
+   left opens its chat. Tapping one opens that session (the signal for what to talk about). Nothing here rings or
+   speaks. The tray is the screen's width, so a card slides off the edge it is swiped towards. */
+.voice-cards {
+  --fade: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: absolute;
+  left: -16px;
+  right: -16px;
+  bottom: 0;
+  z-index: 1;
+  max-height: var(--cards-h);
+  /* Room above and below the cards: at rest they sit clear of the fades, and their shadows are not clipped. */
+  padding: var(--fade) 16px;
+  /* The tray's ends fade out instead of cutting a card off: the next one rises out of the fade as it scrolls. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  animation: call-rise 0.35s var(--ease);
+}
+.voice-cards::-webkit-scrollbar {
+  display: none;
+}
+/* The tray's cards are as wide as a phone's lock-screen notification. */
+.voice-cards .swipe {
+  max-width: 320px;
+  margin: 0 auto;
+}
+/* Swiping is how a card goes on a phone; the cross is for a mouse. */
+@media (hover: none), (pointer: coarse) {
+  .voice-card-later {
+    display: none;
+  }
+  .voice-card {
+    padding-right: 14px;
+  }
+}
+.voice-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 4px 4px 14px;
+  border-radius: var(--r-4);
+  background: var(--clay);
+  box-shadow: var(--e2);
+  color: var(--ink-2);
+}
+.voice-card-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.voice-card.needs .voice-card-dot {
+  background: var(--amber);
+}
+.voice-card.failed .voice-card-dot {
+  background: var(--red-ink);
+}
+/* A briefing being opened (BriefCards.tsx): its dot breathes until the session is on screen. */
+.voice-card.opening .voice-card-dot {
+  animation: breathe 1.2s var(--ease) infinite;
+}
+.voice-card-open {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.voice-card-open b {
+  display: block;
+  overflow: hidden;
+  font-weight: 500;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.voice-card-open span {
+  font-size: var(--fs-2);
+  color: var(--ink-3);
+}
+
+.voice-call {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  padding: 22px 20px 18px;
+  border-radius: var(--r-5);
+  text-align: center;
+  background: var(--clay);
+  box-shadow: var(--e3);
+  animation: call-rise 0.35s var(--ease);
+}
+.voice-call-mark {
+  display: block;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--green) 80%, #d8ffe6), var(--green));
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.4),
+    0 2px 6px color-mix(in oklab, var(--green) 35%, transparent);
+  animation: call-pulse 1.1s ease-in-out infinite;
+}
+.voice-call h2 {
+  margin: 0;
+  font-size: var(--fs-6);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.voice-call p {
+  margin: 4px 0 18px;
+  font-size: var(--fs-3);
+  color: var(--ink-2);
+}
+.voice-call-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.voice-call-actions .btn {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 21px;
+  font-size: var(--fs-4);
+  min-width: 130px;
+}
+.voice-call-actions .btn.ghost {
+  box-shadow: none;
+  background: var(--fill);
+}
+@keyframes call-rise {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes call-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+/* Typing instead: a small sheet over the screen. */
+.voice-keypad-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+}
+.voice-keypad {
+  width: min(100%, 420px);
+  padding: 16px;
+  border-radius: var(--r-4);
+  background: var(--clay);
+  box-shadow: var(--e3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* A private entry's form (components/PrivateFields) sits flat on the keypad sheet. */
+.voice-keypad .private-kinds {
+  margin: 0;
+}
+.voice-keypad .private-fields {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+.voice-keypad form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.voice-keypad .pcard .input {
+  height: auto;
+  font-size: inherit;
+}
+.voice-keypad .input {
+  height: 42px;
+  font-size: var(--fs-5);
+  letter-spacing: 0.04em;
+}
+.voice-keypad-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.voice-keypad .btn.ghost {
+  box-shadow: none;
+  background: var(--fill);
+}
+
+/* In the window the screen sits below the title bar, so the native controls stay reachable; the phone app has none. */
+.app > .voice {
+  top: var(--titlebar);
+}
+.companion .app > .voice {
+  top: 0;
+}
+
+/* What Relay shows as it speaks (Shown.tsx): the waves draw up into a band at the top, the words keep two lines
+   of their own (so captions arriving never move the pictures), and the pictures take the rest, edge to edge, with
+   no frame: only their own rounded corners and a soft shadow. Several are an album that scrolls sideways. */
+.voice-waves,
+.voice-words {
+  transition:
+    top 0.3s var(--ease),
+    height 0.3s var(--ease);
+}
+.voice:is(.has-shown, .has-phone) .voice-main {
+  --wave: 9%;
+}
+.voice:is(.has-shown, .has-phone) .voice-waves {
+  top: calc(var(--wave) - 50px);
+  height: 100px;
+}
+.voice:is(.has-shown, .has-phone) .voice-words {
+  top: calc(var(--wave) + 36px);
+  gap: 6px;
+}
+.voice:is(.has-shown, .has-phone) .voice-line {
+  font-size: var(--fs-4);
+  height: calc(1.45em * 2);
+  min-height: 0;
+  max-height: calc(1.45em * 2);
+  flex: none;
+}
+.voice-shown {
+  --side: 24px; /* the words' inset plus the screen's gutter: the album runs to the screen's edges */
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: calc(100% + 2 * var(--side));
+  margin: 0 calc(-1 * var(--side)) 22px;
+  display: flex;
+  flex-direction: column;
+  text-shadow: none;
+  pointer-events: auto;
+  touch-action: pan-x;
+  animation: shown-in 0.4s var(--ease);
+  transition:
+    transform 0.22s var(--ease),
+    opacity 0.22s var(--ease);
+}
+@keyframes shown-in {
+  from {
+    transform: translateY(18px) scale(0.98);
+    opacity: 0;
+  }
+}
+/* A grabber, as on a sheet: pull the pictures down (or tap it) to put them away. */
+.voice-shown-handle {
+  flex: none;
+  align-self: center;
+  width: 64px;
+  height: 22px;
+  border-radius: 11px;
+  position: relative;
+}
+.voice-shown-handle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36px;
+  height: 4px;
+  translate: -50% -50%;
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--ink-3) 45%, transparent);
+  transition: background 0.2s var(--ease);
+}
+.voice-shown-handle:hover::after {
+  background: var(--ink-3);
+}
+.voice-shown-strip {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  padding: 0 var(--side);
+}
+.voice-shown-strip::-webkit-scrollbar {
+  display: none;
+}
+/* An album: each picture a little narrower than the screen, so the next one peeks in; the one in the middle is
+   full size, its neighbours (--off, 0 to 1, set as it scrolls) smaller and quieter. */
+.voice-shown.is-album .voice-shown-strip {
+  padding: 0;
+}
+/* Room before the first picture and after the last, so each can come to the middle. */
+.voice-shown.is-album .voice-shown-strip::before,
+.voice-shown.is-album .voice-shown-strip::after {
+  content: "";
+  flex: 0 0 11%;
+}
+.voice-shown-slide {
+  --off: 0;
+  flex: 0 0 100%;
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+.voice-shown.is-album .voice-shown-slide {
+  flex-basis: 78%;
+  padding: 0 6px;
+}
+.voice-shown-frame {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: flex-end; /* every picture stands on its caption, whatever its shape */
+  justify-content: center;
+  container-type: size; /* the picture is fitted to this area (cq units), so it keeps its own shape */
+  transform-origin: 50% 100%;
+  transform: scale(calc(1 - var(--off) * 0.1));
+  opacity: calc(1 - var(--off) * 0.45);
+  will-change: transform;
+}
+.voice-shown-img {
+  display: block;
+  padding: 0;
+  line-height: 0;
+  background: none;
+  cursor: zoom-in;
+}
+/* Fitted, never letterboxed: the corners and the shadow follow the picture itself. */
+.voice-shown-img img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100cqw;
+  max-height: 100cqh;
+  border-radius: 18px;
+  box-shadow:
+    0 18px 40px -12px rgba(0, 0, 0, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.12);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.voice-shown-wait {
+  --r: 1.333; /* height over width: the picture's own when known (Shown.tsx) */
+  height: min(100cqh, 100cqw * var(--r));
+  aspect-ratio: 1 / var(--r);
+  border-radius: 18px;
+  background: var(--well);
+  animation: breathe 1.2s ease-in-out infinite;
+}
+.voice-shown-missing {
+  padding: 0 24px;
+  font-size: var(--fs-2);
+  color: var(--ink-3);
+  text-align: center;
+}
+.voice-shown-slide figcaption {
+  flex: none;
+  max-width: 32ch;
+  min-height: 1.4em;
+  font-size: var(--fs-2);
+  line-height: 1.4;
+  color: var(--ink-2);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: calc(1 - var(--off));
+}
+.voice-shown-dots {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding-top: 10px;
+}
+.voice-shown-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--ink-3) 35%, transparent);
+  transition:
+    width 0.25s var(--ease),
+    background 0.25s var(--ease);
+}
+.voice-shown-dots span.on {
+  width: 16px;
+  background: var(--ink-2);
+}
+/* The phone's screen (PhoneView.tsx) takes the pictures' place: the area under the words, the phone fitted to it in
+   its own shape (cq units), standing on the same line the pictures do. It rises in as the waves draw up into their
+   band, and fades back out as they come down. */
+.voice-phone {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  margin: 0 0 22px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  container-type: size;
+  text-shadow: none;
+  pointer-events: auto; /* a tap on the phone is not a tap on the stage: it does not stop Relay */
+  animation: shown-in 0.4s var(--ease);
+  transition:
+    transform 0.24s var(--ease),
+    opacity 0.24s var(--ease);
+}
+.voice-phone.is-leaving {
+  opacity: 0;
+  transform: translateY(14px) scale(0.98);
+  pointer-events: none;
+}
+.voice-phone-frame {
+  --r: 2.1667; /* height over width: the phone's own (PhoneView.tsx) */
+  position: relative;
+  height: min(100cqh, 100cqw * var(--r));
+  aspect-ratio: 1 / var(--r);
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--well);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ink-3) 22%, transparent);
+}
+.voice-phone-frame img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* the frame has the phone's own shape, so nothing is cropped or stretched */
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: opacity 0.25s var(--ease);
+}
+.voice-phone-frame img.waiting {
+  opacity: 0;
+}
+.voice-phone-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: var(--fs-2);
+  color: var(--ink-3);
+  animation: breathe 1.6s ease-in-out infinite;
+}
+.voice-phone-note {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  translate: -50% 0;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: var(--fs-1);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-phone,
+  .voice-phone.is-leaving {
+    transform: none;
+  }
+}
+
+/* A tap: the picture full screen, over everything; another tap anywhere puts it back. */
+.voice-full {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-sheet) + 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 12px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  background: rgba(0, 0, 0, 0.92);
+  text-shadow: none;
+  pointer-events: auto; /* the words' area it sits in lets taps through */
+  animation: voice-full-in 0.2s var(--ease);
+  cursor: zoom-out;
+}
+.voice-full img {
+  max-width: 100%;
+  max-height: calc(100% - 48px);
+  object-fit: contain;
+  border-radius: 8px;
+}
+.voice-full p {
+  margin: 0;
+  max-width: 40ch;
+  font-size: var(--fs-3);
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+@keyframes voice-full-in {
+  from {
+    opacity: 0;
+  }
+}
+/* Pulled down, the pictures slide out under the bottom of their own area: never over the keys. Only the vertical
+   edge is clipped; the waves and the album still run past the sides. */
+.voice:is(.has-shown, .has-phone) .voice-main {
+  overflow-x: visible;
+  overflow-y: clip;
+}
+
+/* ---- The phone over the waves ---------------------------------------------------------------------------------------
+   With the phone up, the waves run behind it, softened, instead of taking a band of their own above it. Nothing sits
+   on the phone except what is shown or asked over the blur: each part has its own room, top to bottom: the phone,
+   the words (a pill under it), the sessions' cards, then the mic key in its own row, smaller than when it is alone.
+   --tray is the cards' height (Voice.tsx sets --cards-h), --say the words' strip. The phone takes what is left, and
+   no more than a phone's share of the width, so it reads as a window onto the phone rather than filling the screen. */
+.voice.has-phone {
+  --say: 64px;
+  --tray: 0px;
+}
+.voice.has-phone.has-cards {
+  --tray: var(--cards-h);
+}
+.voice.has-phone .voice-cards {
+  bottom: 0;
+}
+.voice.has-phone .voice-bottom {
+  gap: 10px;
+}
+.voice.has-phone .vkey-face {
+  zoom: 0.72;
+}
+.voice.has-phone .vkey {
+  gap: 6px;
+}
+.voice.has-phone .vkey.small {
+  margin-top: 8px;
+}
+.voice.has-phone .vkey.small .vkey-face {
+  zoom: 0.5;
+}
+.voice.has-phone .voice-main {
+  --wave: 36%;
+}
+.voice.has-phone .voice-waves {
+  top: calc(var(--wave) - 50px);
+  height: 100px;
+  z-index: 0;
+  opacity: 0.85;
+  -webkit-filter: blur(3px);
+  filter: blur(3px);
+}
+.voice.has-phone .voice-phone {
+  z-index: 1;
+  top: 28px;
+  bottom: calc(var(--say) + var(--tray) + 8px);
+}
+.voice.has-phone .voice-phone-frame {
+  height: min(100cqh, 72cqw * var(--r));
+  /* the phone steps a little in from the waves' edge, glass at its rim */
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+}
+/* The words: in their own strip under the phone, above the cards, two lines at most. */
+.voice.has-phone.has-phone:not(.has-shown) .voice-words {
+  bottom: calc(var(--tray) + 8px);
+  max-height: var(--say);
+}
+
+/* ---- The stage and its glass ------------------------------------------------------------------------------------
+   While penrose uses the phone, the phone's screen is the stage, filling the middle of the screen under everything
+   else (PhoneView.tsx); the waves draw up into a band above it, and the words become a frosted pill on its lower edge.
+   Whatever is shown or asked (pictures, cards, the private form, the audio menu) sits on the stage over a blur: the
+   scrim fades in, the stage softens and steps back a little, and everything eases over the same 0.3 s so the
+   change reads as one movement. The layers, bottom to top: stage, scrim, waves, tap area, words, cards. */
+.voice {
+  --glass: color-mix(in oklab, var(--canvas) 78%, transparent);
+  --glass-line: color-mix(in oklab, var(--ink-3) 24%, transparent);
+  --blur: blur(18px) saturate(1.35);
+  --soft: 0.3s var(--ease);
+}
+.voice-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: color-mix(in oklab, var(--canvas) 38%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--soft);
+}
+.voice.has-phone:is(.has-shown, .has-sheet) .voice-scrim {
+  opacity: 1;
+}
+.voice-phone {
+  position: absolute;
+  z-index: 0;
+  left: 0;
+  right: 0;
+  top: calc(9% + 54px);
+  bottom: 0;
+  margin: 0;
+  align-items: center;
+  transition:
+    transform 0.4s var(--ease),
+    opacity 0.3s var(--ease),
+    filter var(--soft);
+}
+.voice-phone-frame {
+  box-shadow:
+    0 0 0 1px var(--glass-line),
+    0 24px 60px -24px rgba(0, 0, 0, 0.5);
+}
+.voice.has-phone:is(.has-shown, .has-sheet) .voice-phone {
+  filter: blur(10px) brightness(0.92);
+  transform: scale(0.97);
+}
+.voice-status,
+.voice-waves {
+  z-index: 2;
+}
+.voice-stage-tap {
+  z-index: 3;
+}
+.voice-words {
+  z-index: 4;
+}
+.voice-cards,
+.voice-offer {
+  z-index: 5;
+}
+/* The words, with the stage up: a frosted pill in their own strip under the phone (the bottom is set with the phone,
+   above), instead of text over the strands. */
+.voice.has-phone:not(.has-shown) .voice-words {
+  top: auto;
+  justify-content: flex-end;
+  text-shadow: none;
+}
+/* One pill at a time: what is being said, else what penrose is talking about. */
+.voice.has-phone:not(.has-shown) .voice-words:has(.voice-line > span:not(:empty)) .voice-focus {
+  display: none;
+}
+.voice.has-phone:not(.has-shown) :is(.voice-line, .voice-focus) {
+  max-width: min(34ch, 100%);
+  padding: 8px 16px;
+  border-radius: 18px;
+  background: var(--glass);
+  box-shadow: 0 0 0 1px var(--glass-line);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  animation: glass-in 0.3s var(--ease);
+}
+.voice.has-phone:not(.has-shown) .voice-line {
+  color: var(--ink-2);
+  height: auto;
+  min-height: 0;
+  max-height: calc(1.45em * 2 + 16px);
+}
+.voice.has-phone:not(.has-shown) .voice-line:has(> span:empty),
+.voice.has-phone:not(.has-shown) .voice-line:empty {
+  display: none;
+}
+.voice.has-phone:not(.has-shown) .voice-focus {
+  padding: 4px 12px;
+  border-radius: 99px;
+}
+@keyframes glass-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
+}
+/* Cards, the private form's sheet, the keypad and the audio menu: frosted glass, with the same fall-back where the
+   browser cannot blur (a plain, more opaque fill). */
+.voice-card,
+.voice-offer,
+.voice-keypad,
+.voice-route-menu {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  box-shadow:
+    0 0 0 1px var(--glass-line),
+    0 16px 40px -18px rgba(0, 0, 0, 0.45);
+}
+.voice-keypad-scrim {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .voice-card,
+  .voice-offer,
+  .voice-keypad,
+  .voice-route-menu,
+  .voice.has-phone:not(.has-shown) :is(.voice-line, .voice-focus) {
+    background: color-mix(in oklab, var(--canvas) 92%, transparent);
+  }
+  .voice-scrim {
+    background: color-mix(in oklab, var(--canvas) 70%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-phone,
+  .voice-scrim {
+    transition: none;
+  }
+  .voice.has-phone:is(.has-shown, .has-sheet) .voice-phone {
+    transform: none;
+  }
+}
+
+/* The audio menu (OutputMenu.tsx), as in a call's: the route in force with a tick, rising from its button. */
+.voice-route {
+  position: relative;
+}
+.voice-route .ib.is-on {
+  color: var(--ink);
+}
+.voice-route-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 6;
+  width: max-content;
+  min-width: 220px;
+  max-width: min(300px, calc(100vw - 32px));
+  padding: 6px;
+  border-radius: var(--r-4);
+  transform-origin: 100% 100%;
+  animation: route-in 0.22s var(--ease);
+}
+@keyframes route-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+.voice-route-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: var(--r-3);
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--fs-3);
+  text-align: left;
+}
+.voice-route-item span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.voice-route-item:hover,
+.voice-route-item:focus-visible {
+  background: var(--fill);
+}
+.voice-route-item.is-on {
+  color: var(--ink);
+  font-weight: 500;
+}
+.voice-route-note {
+  margin: 4px 0 2px;
+  padding: 8px 12px 6px;
+  border-top: 1px solid var(--glass-line);
+  font-size: var(--fs-1);
+  line-height: 1.4;
+  color: var(--ink-3);
+}

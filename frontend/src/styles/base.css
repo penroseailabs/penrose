@@ -1,0 +1,211 @@
+/* Base and the element kit: every control is a small piece of soft clay on the marble, in three weights.
+   Plain (no fill until hovered, then it lifts), clay (raised) and filled (graphite, for the one thing to do next). */
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; overflow: hidden; }
+body {
+  font: var(--fs-3) / 1.5 var(--font);
+  font-optical-sizing: auto;
+  letter-spacing: -0.006em;
+  color: var(--ink);
+  /* soft light (two glows), the Penrose tiling drawn for this window (lib/tiledBackground.ts), then the grain */
+  background-color: var(--canvas);
+  background-image: var(--glows), var(--tiles, none), var(--grain);
+  background-size: auto, auto, var(--tiles-size, 100% 100%), 180px 180px;
+  background-blend-mode: normal, normal, normal, soft-light;
+  -webkit-font-smoothing: antialiased;
+  font-synthesis: none;
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+button { border: 0; background: none; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:disabled { cursor: default; opacity: 0.45; }
+:focus { outline: none; }
+/* An outline, not a shadow: controls use box-shadow for their edge, which would hide a ring drawn that way.
+   Text fields and panels focused for their own sake show focus their own way. */
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+textarea:focus-visible, input:not([type="checkbox"]):not([type="radio"]):focus-visible, select:focus-visible,
+[tabindex="-1"]:focus-visible { outline: none; }
+a { color: var(--accent-ink); text-decoration: none; }
+a:hover { text-decoration: underline; }
+::selection { background: color-mix(in oklab, var(--accent) 26%, transparent); }
+svg.lucide { flex: none; }
+
+/* Apple's continuous corners where the browser can draw them; round corners elsewhere. Circles stay circles. */
+@supports (corner-shape: squircle) {
+  .surface, .btn, .ib, .field, .input, .menu, .menu-item, .seg, .seg button, .composer, .you, .you-edit,
+  .card, .ask, .sheet, .convo, .handset, .screen, .doing, .queued-item, .error-note, .problem, .doctor-note,
+  .signin-choice label, .signin-phone, .phones-qr .qr, .model, .task, .nav-row, .status,
+  .thinking-body, .reasoning, .reasoning-switch, .reasoning-switch button, .reasoning-notes ul, .memory-rows, .relay pre, .trace, .cost-list, .boot-error, .setup-help-log li {
+    corner-shape: squircle;
+  }
+}
+
+/* a card or panel standing on the canvas: a piece of clay */
+.surface { background: var(--clay); }
+
+/* scroll areas: a thin bar that shows only while the pointer is over them */
+/* contain: a swipe that reaches the end stays in the area instead of dragging the page, which on an iPhone would
+   take the next swipes too while trackViewport (lib/layout.ts) pins the page back, so the area seemed not to scroll */
+.scroll { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.scroll:hover { scrollbar-color: color-mix(in oklab, var(--ink-3) 45%, transparent) transparent; }
+.scroll::-webkit-scrollbar { width: 10px; }
+.scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
+.scroll:hover::-webkit-scrollbar-thumb { background-color: color-mix(in oklab, var(--ink-3) 45%, transparent); }
+
+/* icon buttons: plain until hovered, then a little clay lifts under them; pressed in when on */
+.ib {
+  width: 28px; height: 28px; border-radius: var(--r-2); flex: none;
+  display: grid; place-items: center; color: var(--ink-2);
+  transition: background 0.15s var(--ease), box-shadow 0.15s var(--ease), color 0.15s var(--ease), transform 0.15s var(--ease);
+}
+/* Hover only where there is a real pointer: on touch it sticks after a tap and reads as a button left pressed. */
+@media (hover: hover) { .ib:hover:not(:disabled) { color: var(--ink); background: var(--clay); box-shadow: var(--e1); } }
+.ib:active:not(:disabled) { background: var(--well); box-shadow: var(--pressed); transform: scale(0.94); }
+.ib.on { background: var(--well); box-shadow: var(--pressed); color: var(--ink); }
+.ib.on:active:not(:disabled) { transform: scale(0.94); }
+.ib.solid { width: 34px; height: 30px; background: var(--clay); box-shadow: var(--e1); }
+.ib.solid:hover:not(:disabled) { box-shadow: var(--e1-hover); }
+.ib.solid:active:not(:disabled) { background: var(--well); box-shadow: var(--pressed); }
+
+/* buttons: raised clay by default, graphite clay for the main action, plain when quiet; pressed in when held */
+.btn {
+  height: 30px; padding: 0 13px; border-radius: var(--r-2);
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  font-size: var(--fs-3); font-weight: 500; color: var(--ink); white-space: nowrap;
+  background: var(--clay); box-shadow: var(--e1);
+  transition: box-shadow 0.15s var(--ease), filter 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.btn:hover:not(:disabled) { box-shadow: var(--e1-hover); }
+.btn:active:not(:disabled) { background: var(--well); box-shadow: var(--pressed); transform: scale(0.97); }
+.btn.primary {
+  color: var(--on-accent);
+  background: linear-gradient(160deg, color-mix(in oklab, var(--accent) calc(100% - 14% * var(--k)), white), var(--accent));
+  box-shadow: -1.6px -1.6px 4px var(--hi), 1.6px 2.4px 5.6px color-mix(in oklab, var(--accent) 36%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 2px rgba(0, 0, 0, 0.065);
+}
+.btn.primary:hover:not(:disabled) { filter: brightness(1.05); }
+.btn.primary:active:not(:disabled) { background: var(--accent); box-shadow: inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.18), inset -1px -1px 2px rgba(255, 255, 255, 0.18); }
+.btn.tinted { color: var(--accent-ink); background: linear-gradient(160deg, var(--accent-soft), color-mix(in oklab, var(--accent) 16%, var(--elevated))); }
+.btn.danger { color: var(--red-ink); }
+.btn.quiet { background: none; box-shadow: none; color: var(--ink-2); padding: 0 6px; height: 24px; font-size: var(--fs-2); }
+.btn.quiet:hover:not(:disabled), .btn.quiet:active:not(:disabled) { color: var(--ink); background: none; box-shadow: none; }
+.btn.small { height: 26px; padding: 0 11px; font-size: var(--fs-2); border-radius: var(--r-2); }
+.kbd { font-size: var(--fs-1); color: var(--ink-3); font-weight: 500; letter-spacing: 0; }
+.btn.primary .kbd { color: color-mix(in oklab, var(--on-accent) 72%, transparent); }
+
+/* fields: wells pressed into the clay; focus draws a quiet graphite halo */
+.field {
+  height: 30px; border-radius: var(--r-2); padding: 0 10px;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--well); box-shadow: var(--inset); color: var(--ink-3);
+  transition: box-shadow 0.15s var(--ease);
+}
+.field input, .field select { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--ink); }
+.field input::placeholder, textarea::placeholder { color: var(--ink-3); }
+.field:focus-within { box-shadow: var(--inset), var(--focus); }
+.input {
+  width: 100%; height: 32px; border: 0; border-radius: var(--r-2); padding: 0 11px;
+  background: var(--well); box-shadow: var(--inset); color: var(--ink);
+  transition: box-shadow 0.15s var(--ease);
+}
+.input:focus { box-shadow: var(--inset), var(--focus); }
+.secret { position: relative; display: flex; flex: 1; min-width: 0; }
+.secret .input { padding-right: 34px; }
+.secret-eye { position: absolute; right: 3px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; }
+textarea.input { height: auto; padding: 8px 11px; resize: vertical; line-height: 1.5; }
+
+/* status pill and dot */
+.status {
+  display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px 0 8px; border-radius: 99px;
+  font-size: var(--fs-2); font-weight: 500; color: var(--ink-2); white-space: nowrap;
+  background: var(--well); box-shadow: var(--inset);
+}
+.sd { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--ink-3); transition: background 0.3s; }
+.sd.work { background: radial-gradient(circle at 32% 30%, var(--accent-top), var(--accent) 70%); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent); animation: breathe 2.4s var(--ease) infinite; }
+.sd.done { background: var(--green); }
+.sd.wait { background: var(--amber); }
+.sd.err { background: var(--red); }
+.sd.none { background: transparent; box-shadow: inset 0 0 0 1.25px var(--ink-3); }
+@keyframes breathe { 50% { opacity: 0.4; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.9s linear infinite; }
+
+/* Penrose marks (components/Tiles.tsx), cut from the logo's tiling. Kept quiet: hairline outlines at half
+   strength, tiles never fully opaque, motion only in opacity and a short settle. */
+.pz { display: block; flex: none; overflow: hidden; border-radius: 29%; fill: currentColor; }
+.pz.accent { color: var(--accent); }
+/* The template's other tiles: a faint ground that every mark shares. */
+.pz-ground polygon { fill-opacity: 0.07; }
+.pz-on { transform-box: fill-box; transform-origin: center; }
+.pz-tick .pz-on, .pz-cross .pz-on { animation: pz-set 0.36s var(--ease) both; }
+@keyframes pz-set { from { opacity: 0; transform: scale(0.5); } }
+.pz-spin .pz-on { animation: pz-wave 1.5s ease-in-out infinite; }
+@keyframes pz-wave { 0%, 60%, 100% { opacity: 0.25; } 20% { opacity: 1; } }
+.pz-wait .pz-on { animation: pz-breathe 2.4s ease-in-out infinite; }
+@keyframes pz-breathe { 50% { opacity: 0.4; } }
+.pz-later .pz-on { fill: none; stroke: currentColor; stroke-width: 0.8; stroke-opacity: 0.55; stroke-linejoin: round; }
+@media (prefers-reduced-motion: reduce) { .pz-tick .pz-on, .pz-cross .pz-on { animation: none; } .pz-spin .pz-on { animation-duration: 3s; } }
+
+/* step marks: a tile tick when done, the tile star lighting in turn while working */
+.sm { width: 18px; height: 18px; display: grid; place-items: center; flex: none; color: var(--ink-3); }
+.sm .pz { width: 100%; height: 100%; }
+.sm.ok { color: var(--green); }
+.sm.err { color: var(--red); }
+.sm.now { color: var(--accent); }
+.sm.now .pz, .sm.wait .pz, .sm.later .pz { width: 15px; height: 15px; }
+.sm.wait { color: var(--amber); }
+
+/* menus and popovers float above the clay */
+.menu {
+  position: absolute; z-index: var(--z-menu); min-width: 200px; padding: 5px; border-radius: var(--r-3);
+  background: var(--clay); box-shadow: var(--e3);
+  animation: pop 0.18s var(--spring) both;
+}
+@keyframes pop { from { opacity: 0; transform: translateY(-3px) scale(0.97); } }
+.menu-item {
+  width: 100%; height: 30px; padding: 0 9px; border-radius: var(--r-1);
+  display: flex; align-items: center; gap: 9px; text-align: left; font-size: var(--fs-3); color: var(--ink);
+}
+.menu-item:hover:not(:disabled), .menu-item:focus-visible { background: var(--well); box-shadow: var(--pressed); outline: none; }
+.menu-item svg { color: var(--ink-2); }
+.menu-item .hint { margin-left: auto; font-size: var(--fs-1); color: var(--ink-3); }
+.menu-item.danger, .menu-item.danger svg { color: var(--red-ink); }
+.menu-item .check { margin-left: auto; color: var(--accent-ink); }
+.menu-sep { height: 1px; margin: 4px 6px; background: var(--rule); }
+.menu-label { padding: 6px 9px 2px; font-size: var(--fs-1); font-weight: 500; color: var(--ink-3); }
+
+/* switch: a track pressed into the clay, a clay knob */
+.switch { position: relative; width: 36px; height: 21px; flex: none; border-radius: 99px; background: var(--well); box-shadow: var(--inset); transition: background 0.25s var(--ease); }
+.switch::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 17px; height: 17px; border-radius: 50%;
+  background: var(--clay); box-shadow: 0.8px 1.2px 2.4px var(--lo), 0 0 0 0.5px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.56);
+  transition: transform 0.3s var(--spring);
+}
+.switch[aria-checked="true"] { background: var(--accent); }
+.switch[aria-checked="true"]::after { transform: translateX(15px); }
+.switch:disabled { opacity: 0.55; cursor: default; }
+
+/* segmented control: a well with the chosen segment lifted out of it in clay */
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--well); box-shadow: var(--inset); }
+.seg button { height: 24px; padding: 0 11px; border-radius: 7px; font-size: var(--fs-2); color: var(--ink-2); transition: background 0.2s var(--ease), color 0.2s var(--ease), box-shadow 0.2s var(--ease); }
+.seg button:hover:not([aria-pressed="true"]) { color: var(--ink); }
+.seg button[aria-pressed="true"] { color: var(--ink); font-weight: 500; background: var(--clay); box-shadow: var(--e1); }
+
+.appear { animation: appear 0.45s var(--ease) both; }
+@keyframes appear { from { opacity: 0; transform: translateY(6px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+}
+
+/* The product name where it stands on its own: "penrose", always lowercase, in Fraunces' soft cut (round, warm
+   serifs that sit with the clay), a touch larger than the Inter around it so the two read at the same size. */
+.wordmark {
+  font-family: var(--font-brand);
+  font-weight: 600;
+  font-variation-settings: "SOFT" 100;
+  font-size: 1.18em;
+  line-height: 1;
+  letter-spacing: -0.005em;
+  text-transform: none;
+}

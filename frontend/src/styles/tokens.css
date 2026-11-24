@@ -1,0 +1,187 @@
+/* Relay's design tokens. A marble canvas, soft clay surfaces on it, graphite ink, and colour only in small places
+   and only where it means something: graphite = Relay at work, green = done, amber = needs you, red = a problem.
+   The theme is resolved in JS (system, light or dark) and set as <html data-theme>. */
+
+:root {
+  --font: "Inter Variable", "Inter", "Segoe UI Variable Text", -apple-system, "SF Pro Text", system-ui, sans-serif;
+  /* The product name, "penrose", always lowercase (base.css .wordmark). */
+  --font-brand: "Fraunces Variable", "Fraunces", Georgia, serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  /* How much of the clay shows. --k scales the gradients (surface fills, light on the canvas), --kd the bevel
+     highlights and shadows. 1 is the full original look; lower is subtler. */
+  --k: 0.5;
+  --kd: var(--k);
+
+  /* type: one ramp for the whole app */
+  --fs-1: 11px; /* captions, keyboard hints */
+  --fs-2: 12px; /* secondary lines, meta */
+  --fs-3: 13px; /* controls, lists: the app's base */
+  --fs-4: 14px; /* the conversation */
+  --fs-5: 15px; /* headings */
+  --fs-6: 19px; /* titles */
+  --fs-7: 24px; /* large titles */
+
+  /* corners (continuous where the browser draws them: see base.css) */
+  --r-1: 6px;
+  --r-2: 9px;
+  --r-3: 12px;
+  --r-4: 16px;
+  --r-5: 20px;
+
+  /* surfaces: the marble canvas (also the desktop app's title bar colour, desktop/src/main.js), and what sits on it */
+  --canvas: #e7e8eb;
+  --content: #fcfcfd;
+  --elevated: #ffffff;
+  --well: #f1f2f4; /* fields and code, pressed into a surface */
+  --bubble: #eeeff2; /* the user's own messages */
+  --fill: rgba(60, 62, 70, 0.07); /* plain controls at rest */
+  --fill-2: rgba(60, 62, 70, 0.12); /* hovered, selected */
+
+  --ink: #1d1d1f;
+  --ink-2: #636369;
+  --ink-3: #808086;
+  --rule: rgba(0, 0, 0, 0.08);
+
+  /* colour that means something */
+  --accent: #3a424d; /* graphite: pencil lead with a cold cast (silver in the dark theme) */
+  --accent-ink: #2c333c;
+  --accent-top: #8f9aa8; /* the light along its top edge: buttons' sheen, the working dot's highlight */
+  --on-accent: #f4f6f9; /* text and marks on an accent fill */
+  --accent-soft: color-mix(in oklab, var(--accent) 11%, var(--elevated));
+  --green: #2e9d5a;
+  --green-ink: #1f7a43;
+  --amber: #d4920f;
+  --red: #d64541;
+  --red-ink: #b3302d;
+  /* series in charts drawn in replies (lib/richDiagrams.ts): muted, told apart by hue, none louder than the rest */
+  --chart-1: #5b7a99;
+  --chart-2: #c4895a;
+  --chart-3: #6c9c7c;
+  --chart-4: #9a7ba3;
+  --chart-5: #b8a14e;
+  --chart-6: #5d9a9d;
+  --chart-7: #b97a86;
+  --chart-8: #858c96;
+
+  /* clay: surfaces lit from the top left, a gentle gradient down to a touch of the canvas */
+  --clay-top: var(--elevated);
+  --clay-bot: color-mix(in oklab, var(--canvas) calc(var(--k) * 50%), var(--elevated));
+  --clay: linear-gradient(160deg, var(--clay-top), var(--clay-bot));
+  --hi: rgba(255, 255, 255, calc(0.74 * var(--kd)));
+  --lo: rgba(158, 163, 176, calc(0.34 * var(--kd)));
+
+  /* depth: soft clay bevels (light top left, shade bottom right) over a faint hairline edge.
+     e1 small controls, e2 cards, panel the conversation, e3 menus and sheets, inset wells pressed in. */
+  --e1: 0 0 0 0.5px rgba(0, 0, 0, 0.05), -1.6px -1.6px 4px var(--hi), 1.6px 2.4px 5px var(--lo),
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.6 * var(--kd))), inset 0 -1px 1.5px rgba(110, 115, 130, calc(0.056 * var(--kd)));
+  --e1-hover: 0 0 0 0.5px rgba(0, 0, 0, 0.06), -1.6px -1.6px 5px var(--hi), 2.4px 3.2px 6.5px var(--lo),
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.64 * var(--kd))), inset 0 -1px 1.5px rgba(110, 115, 130, calc(0.056 * var(--kd)));
+  --e2: 0 0 0 0.5px rgba(0, 0, 0, 0.045), -2px -2px 6px var(--hi), 2px 3px 8px var(--lo),
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.6 * var(--kd))), inset 0 -1px 1.5px rgba(110, 115, 130, calc(0.056 * var(--kd)));
+  --panel: 0 0 0 0.5px rgba(0, 0, 0, 0.04), -5px -5px 13px var(--hi), 5px 6px 16px rgba(158, 163, 176, calc(0.24 * var(--kd))),
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.48 * var(--kd)));
+  --e3: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 10px 26px rgba(70, 74, 86, 0.145), 0 2px 5px rgba(70, 74, 86, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.56);
+  --inset: inset 1.2px 1.2px 2.8px var(--lo), inset -1.2px -1.2px 2.4px var(--hi);
+  --pressed: inset 1.2px 1.2px 2.4px var(--lo), inset -1.2px -1.2px 2px var(--hi);
+  /* The one focus highlight for every field (search, inputs, composer): a hairline, never a thick halo. */
+  --focus: 0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent);
+  --focus-ring: color-mix(in oklab, var(--accent) 80%, transparent);
+  --scrim: rgba(20, 20, 24, 0.18);
+
+  /* motion */
+  --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+  /* a gentle spring: settles with a touch of overshoot, like the system's own */
+  --spring: linear(0, 0.06 3%, 0.24 7%, 0.56 14%, 0.86 23%, 1.01 33%, 1.03 40%, 1.01 55%, 1);
+
+  /* layout */
+  --titlebar: 38px; /* also the desktop app's titleBarOverlay height (desktop/src/main.js) */
+  /* what sits above what */
+  --z-raised: 5;
+  --z-drawer: 20; /* the phone app's task list */
+  --z-menu: 30;
+  --z-overlay: 35; /* the phone app's phone viewer */
+  --z-sheet: 40;
+
+  /* earlier names, still used by some rules */
+  --sage: var(--green);
+  --honey: var(--amber);
+  --rose: var(--red);
+  --rose-ink: var(--red-ink);
+  --raised: var(--e1);
+  --raised-hover: var(--e1-hover);
+  --float: var(--e3);
+  --well-in: var(--inset);
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --canvas: #1e1f23;
+  --content: #232428;
+  --elevated: #2b2c31;
+  --well: #2c2d32;
+  --bubble: #303136;
+  --fill: rgba(235, 235, 245, 0.08);
+  --fill-2: rgba(235, 235, 245, 0.14);
+
+  --ink: #f2f2f4;
+  --ink-2: #a3a4aa;
+  --ink-3: #7d7e85;
+  --rule: rgba(255, 255, 255, 0.08);
+
+  --accent: #b4bdc8;
+  --accent-ink: #d3dae2;
+  --accent-top: #eef2f6;
+  --on-accent: #16191d;
+  --green: #3dbb67;
+  --green-ink: #5fcf85;
+  --amber: #e8ac3a;
+  --red: #ff6b62;
+  --red-ink: #ff8f88;
+  --chart-1: #8aa7c4;
+  --chart-2: #d9a77c;
+  --chart-3: #8fc09f;
+  --chart-4: #b99cc2;
+  --chart-5: #d3bd6f;
+  --chart-6: #82bdc0;
+  --chart-7: #d59ca7;
+  --chart-8: #a8aeb8;
+
+  --hi: rgba(255, 255, 255, calc(0.036 * var(--kd)));
+  --lo: rgba(0, 0, 0, calc(0.44 * var(--kd)));
+  --e1: 0 0 0 0.5px rgba(255, 255, 255, 0.06), -1.6px -1.6px 4px var(--hi), 1.6px 2.4px 5.6px var(--lo),
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.05 * var(--kd))), inset 0 -1px 1.5px rgba(0, 0, 0, calc(0.2 * var(--kd)));
+  --e1-hover: 0 0 0 0.5px rgba(255, 255, 255, 0.08), -1.6px -1.6px 5px var(--hi), 2.4px 3.2px 7px var(--lo),
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.064 * var(--kd))), inset 0 -1px 1.5px rgba(0, 0, 0, calc(0.2 * var(--kd)));
+  --e2: 0 0 0 0.5px rgba(255, 255, 255, 0.055), -2px -2px 6px var(--hi), 2.5px 3.5px 9px var(--lo),
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.05 * var(--kd))), inset 0 -1px 1.5px rgba(0, 0, 0, calc(0.2 * var(--kd)));
+  --panel: 0 0 0 0.5px rgba(255, 255, 255, 0.05), -5px -5px 13px rgba(255, 255, 255, calc(0.024 * var(--kd))),
+    6px 8px 19px rgba(0, 0, 0, calc(0.4 * var(--kd))), inset 0 1px 0 rgba(255, 255, 255, calc(0.032 * var(--kd)));
+  --e3: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 11px 29px rgba(0, 0, 0, 0.44), 0 2px 5px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --inset: inset 1.2px 1.2px 2.8px var(--lo), inset -1px -1px 2px rgba(255, 255, 255, calc(0.032 * var(--kd)));
+  --pressed: inset 1.2px 1.2px 2.4px var(--lo), inset -1px -1px 1.6px rgba(255, 255, 255, calc(0.032 * var(--kd)));
+  --scrim: rgba(0, 0, 0, 0.4);
+
+  color-scheme: dark;
+}
+
+/* The canvas: a Penrose tiling in white-to-grey shades (lib/tiledBackground.ts sets --tiles), under a grain
+   of grey noise centred on mid-grey, laid on with soft-light so it only nudges the colour beneath. */
+:root {
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g' x='0' y='0' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='.12' intercept='.44'/%3E%3CfeFuncG type='linear' slope='.12' intercept='.44'/%3E%3CfeFuncB type='linear' slope='.12' intercept='.44'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  /* light on the clay, falling from the top left as through a window (all scaled by --k) */
+  --glows: radial-gradient(1100px 650px at 6% -12%, rgba(255, 255, 255, calc(0.3 * var(--k))), transparent 60%),
+    radial-gradient(1000px 700px at 100% 105%, rgba(140, 152, 176, calc(0.13 * var(--k))), transparent 65%);
+  --panel-sheen: radial-gradient(900px 500px at 15% 0%, rgba(255, 255, 255, calc(0.36 * var(--k))), transparent 65%);
+  --gloss: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, calc(0.12 * var(--k))) 32%, rgba(255, 255, 255, calc(0.03 * var(--k))) 40%, transparent 50%, transparent 74%, rgba(255, 255, 255, calc(0.06 * var(--k))) 84%, transparent 94%);
+}
+:root[data-theme="dark"] {
+  --glows: radial-gradient(1200px 700px at 8% -10%, rgba(255, 255, 255, calc(0.045 * var(--k))), transparent 60%),
+    radial-gradient(1000px 700px at 100% 105%, rgba(0, 0, 0, calc(0.25 * var(--k))), transparent 65%);
+  --panel-sheen: radial-gradient(900px 500px at 15% 0%, rgba(255, 255, 255, calc(0.035 * var(--k))), transparent 65%);
+  --gloss: none;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g' x='0' y='0' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='.18' intercept='.41'/%3E%3CfeFuncG type='linear' slope='.18' intercept='.41'/%3E%3CfeFuncB type='linear' slope='.18' intercept='.41'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}

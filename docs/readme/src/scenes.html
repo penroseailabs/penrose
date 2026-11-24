@@ -1,0 +1,454 @@
+<!doctype html>
+<!-- The README's pictures, drawn with penrose's own design tokens (frontend/src/styles/tokens.css): a marble canvas
+     laid with a Penrose tiling, soft clay surfaces, graphite ink, Fraunces for the name. One scene per page load:
+     scenes.html?scene=hero&theme=light. render.py turns every scene into docs/readme/<scene>-<theme>.png. -->
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource-variable/fraunces/full.css">
+<link rel="stylesheet" href="../../../frontend/node_modules/@fontsource-variable/inter/wght.css">
+<link rel="stylesheet" href="../../../frontend/src/styles/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font: 15px/1.5 var(--font); letter-spacing: -0.006em; color: var(--ink);
+    -webkit-font-smoothing: antialiased; font-synthesis: none; background: transparent;
+  }
+  .scene { position: relative; overflow: hidden; }
+  /* the marble: glows, the tiling (drawn below into --tiles), grain; the same layers as the app's body */
+  .marble {
+    background-color: var(--canvas);
+    background-image: var(--glows), var(--tiles, none), var(--grain);
+    background-size: auto, auto, 100% 100%, 180px 180px;
+    background-blend-mode: normal, normal, normal, soft-light;
+  }
+  .rounded { border-radius: 28px; corner-shape: squircle; }
+  .clay { background: var(--clay); box-shadow: var(--e2); }
+  .panel { background: var(--clay); box-shadow: var(--panel); }
+  .well { background: var(--well); box-shadow: var(--inset); }
+  .wordmark { font-family: var(--font-brand); font-weight: 600; font-variation-settings: "SOFT" 100; letter-spacing: -0.01em; line-height: 1; }
+  .serif { font-family: var(--font-brand); font-variation-settings: "SOFT" 100, "WONK" 0; }
+  .muted { color: var(--ink-2); }
+  .faint { color: var(--ink-3); }
+  .mono { font-family: var(--mono); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 46px; padding: 0 22px;
+    border-radius: 13px; corner-shape: squircle; font-size: 16px; font-weight: 550; color: var(--ink);
+    background: var(--clay); box-shadow: var(--e1); white-space: nowrap;
+  }
+  .btn.primary {
+    color: var(--on-accent);
+    background: linear-gradient(160deg, color-mix(in oklab, var(--accent) calc(100% - 14% * var(--k)), white), var(--accent));
+    box-shadow: -1.6px -1.6px 4px var(--hi), 1.6px 2.4px 5.6px color-mix(in oklab, var(--accent) 36%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 2px rgba(0, 0, 0, 0.065);
+  }
+  svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  /* ---------- hero ---------- */
+  #hero { width: 1200px; height: 620px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  #hero .icon { width: 108px; height: 108px; border-radius: 26px; box-shadow: var(--e3); margin-bottom: 30px; }
+  #hero .name { font-size: 104px; margin-bottom: 26px; }
+  #hero h1 { font-size: 46px; line-height: 1.1; font-weight: 600; letter-spacing: -0.028em; margin: 0 0 18px; }
+  #hero p { font-size: 21px; line-height: 1.45; margin: 0; max-width: 700px; letter-spacing: -0.012em; }
+
+  /* ---------- the link preview (GitHub's social preview, 1280x640) and the account picture ---------- */
+  #social { width: 1280px; height: 640px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  #social .icon { width: 132px; height: 132px; border-radius: 32px; box-shadow: var(--e3); margin-bottom: 34px; }
+  #social .name { font-size: 132px; margin-bottom: 30px; }
+  #social h1 { font-size: 52px; line-height: 1.1; font-weight: 600; letter-spacing: -0.028em; margin: 0; }
+  #avatar { width: 500px; height: 500px; }
+  #avatar img { width: 100%; height: 100%; display: block; }
+
+  /* ---------- buttons, each its own small picture ---------- */
+  .button-scene { display: inline-flex; padding: 10px 12px 14px; }
+
+  /* ---------- what you see / what your agent sees ---------- */
+  #sees { width: 1200px; height: 760px; display: grid; grid-template-columns: 380px 1fr; gap: 56px; align-items: center; padding: 0 70px; }
+  .label { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 16px; text-align: center; }
+  .handset {
+    width: 340px; height: 640px; margin: 0 auto; border-radius: 52px; corner-shape: squircle; padding: 12px;
+    background: linear-gradient(160deg, #3b3f46, #17191d); box-shadow: var(--e3), inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  :root[data-theme="dark"] .handset { background: linear-gradient(160deg, #4a4e56, #0d0e10); }
+  .screen { width: 100%; height: 100%; border-radius: 41px; corner-shape: squircle; overflow: hidden; background: #fbfbfa; color: #1d1d1f; display: flex; flex-direction: column; position: relative; font-size: 13px; }
+  .statusbar { height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 6px 26px 0; font-size: 12px; font-weight: 600; }
+  .appbar { display: flex; align-items: center; gap: 10px; padding: 8px 18px 10px; }
+  .appbar b { font-size: 19px; letter-spacing: -0.02em; }
+  .tag { margin-left: auto; font-size: 11px; color: #5a6a4e; background: #e5efdc; padding: 3px 9px; border-radius: 99px; font-weight: 600; }
+  .order { padding: 0 18px; display: flex; flex-direction: column; gap: 2px; }
+  .item { display: flex; align-items: center; gap: 11px; padding: 9px 0 9px 14px; border-bottom: 1px solid #eeeeec; position: relative; }
+  .thumb { width: 38px; height: 38px; border-radius: 10px; flex: none; }
+  .item .t { flex: 1; line-height: 1.25; }
+  .item .t small { display: block; color: #7b7b80; font-size: 11.5px; }
+  .item .p { font-weight: 600; font-size: 12.5px; }
+  .item.out .t, .item.out .p { opacity: 0.45; }
+  .item.out small { color: #b5562e; opacity: 1; }
+  .cta { margin: auto 16px 18px; height: 46px; border-radius: 14px; background: #2f6b3c; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; position: relative; }
+  .num { position: absolute; left: -6px; top: 50%; transform: translateY(-50%); font: 600 10px/1 var(--mono); color: #fff; background: rgba(58,66,77,.86); padding: 3px 4px; border-radius: 5px; }
+  .cta .num { left: 10px; }
+  .tap { position: absolute; right: 22px; top: 50%; width: 30px; height: 30px; margin-top: -15px; border-radius: 50%; background: rgba(255,255,255,.35); box-shadow: 0 0 0 7px rgba(255,255,255,.18); }
+  .agent { border-radius: 24px; corner-shape: squircle; padding: 26px 30px; font: 14.2px/1.72 var(--mono); letter-spacing: 0; white-space: pre; color: var(--ink-2); }
+  .agent .k { color: var(--ink); font-weight: 600; }
+  .agent .n { color: var(--accent-ink); font-weight: 600; }
+  .agent .s { color: var(--ink); }
+  .agent .d { color: var(--ink-3); }
+  .agent .cmd { color: var(--ink); font-weight: 600; }
+  .agent .ok { color: var(--green-ink); }
+  .agent .hl { background: color-mix(in oklab, var(--accent) 12%, transparent); border-radius: 5px; margin: 0 -6px; padding: 0 6px; display: inline-block; }
+
+  /* ---------- a conversation ---------- */
+  #ask { width: 1200px; height: 720px; display: flex; align-items: center; justify-content: center; }
+  .convo { width: 760px; border-radius: 26px; corner-shape: squircle; padding: 34px 38px 30px; display: flex; flex-direction: column; gap: 18px; font-size: 15.5px; }
+  .you { align-self: flex-end; max-width: 78%; background: var(--bubble); padding: 11px 16px; border-radius: 19px; corner-shape: squircle; }
+  .reply { display: flex; gap: 12px; align-items: flex-start; }
+  .reply .avatar { width: 28px; height: 28px; border-radius: 8px; flex: none; margin-top: 1px; box-shadow: var(--e1); }
+  .run { border-radius: 16px; corner-shape: squircle; padding: 14px 18px; display: flex; flex-direction: column; gap: 9px; font-size: 14px; }
+  .step { display: flex; align-items: center; gap: 11px; }
+  .step .faint { margin-left: auto; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .check { width: 17px; height: 17px; border-radius: 50%; background: var(--green); display: grid; place-items: center; flex: none; }
+  .check svg { width: 11px; height: 11px; stroke: #fff; stroke-width: 2.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .pending { width: 17px; height: 17px; border-radius: 50%; border: 2px solid var(--amber); flex: none; }
+  .askcard { border-radius: 16px; corner-shape: squircle; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .askcard .head { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--amber); letter-spacing: 0.02em; text-transform: uppercase; }
+  .options { display: flex; gap: 10px; flex-wrap: wrap; }
+  .options .btn { height: 36px; font-size: 14px; padding: 0 15px; border-radius: 10px; }
+  .composer { margin-top: 4px; height: 50px; border-radius: 16px; corner-shape: squircle; display: flex; align-items: center; padding: 0 8px 0 18px; color: var(--ink-3); }
+  .composer .send { margin-left: auto; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
+
+  /* ---------- a day ---------- */
+  #day { width: 1200px; padding: 54px 50px 56px; }
+  .moments { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; position: relative; }
+  .moments::before { content: ""; position: absolute; left: -50px; right: -50px; top: 19px; height: 1px; background: var(--rule); }
+  .moment { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .when { position: relative; align-self: flex-start; display: inline-flex; align-items: center; gap: 9px; height: 38px; padding: 0 16px 0 12px; border-radius: 99px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .when svg.i { width: 18px; height: 18px; color: var(--accent-ink); }
+  .moment .card { flex: 1; padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 14px; font-size: 14.5px; line-height: 1.45; }
+  .where { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  .moment .you { max-width: 100%; align-self: flex-end; padding: 9px 14px; border-radius: 17px; }
+  .back { display: flex; gap: 10px; align-items: flex-start; }
+  .back img { width: 24px; height: 24px; border-radius: 7px; flex: none; margin-top: 1px; box-shadow: var(--e1); }
+  .proof { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--rule); display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-2); }
+  .proof .pending { width: 17px; height: 17px; }
+
+  /* ---------- a call ---------- */
+  #call { width: 1200px; height: 700px; display: flex; align-items: center; justify-content: center; }
+  .callcard { border-radius: 18px; corner-shape: squircle; padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 14px; font-size: 14.5px; }
+  .callcard .top { display: flex; align-items: center; gap: 13px; }
+  .callcard .top .ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: var(--green-ink); flex: none; }
+  .callcard .top b { display: block; font-size: 15.5px; letter-spacing: -0.015em; }
+  .callcard .top small { color: var(--ink-3); font-size: 13px; }
+  .callcard .top .ended { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+  .said2 { display: grid; grid-template-columns: 66px 1fr; gap: 9px 12px; padding-top: 14px; border-top: 1px solid var(--rule); line-height: 1.45; }
+  .said2 .who { font-size: 13px; font-weight: 600; color: var(--ink-3); padding-top: 1px; }
+
+  /* ---------- features ---------- */
+  #features { width: 1200px; padding: 56px 60px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+  .card { border-radius: 22px; corner-shape: squircle; padding: 28px 28px 30px; }
+  .card .ico { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; margin-bottom: 20px; color: var(--accent-ink); }
+  .card h3 { margin: 0 0 8px; font-size: 19px; font-weight: 600; letter-spacing: -0.02em; }
+  .card p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+
+  /* ---------- how it works ---------- */
+  #how { width: 1200px; padding: 56px; display: flex; flex-direction: column; justify-content: center; }
+  .flow { display: grid; grid-template-columns: 0.95fr 34px 1fr 34px 1.2fr 34px 1.12fr; align-items: stretch; }
+  .node { border-radius: 20px; corner-shape: squircle; padding: 20px 20px 22px; display: flex; flex-direction: column; gap: 6px; }
+  .node .k { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  .node b { font-size: 19px; letter-spacing: -0.02em; }
+  .node span { font-size: 14px; color: var(--ink-2); line-height: 1.45; }
+  .node.main { background: linear-gradient(160deg, color-mix(in oklab, var(--accent) calc(100% - 14% * var(--k)), white), var(--accent)); color: var(--on-accent); }
+  .node.main .k, .node.main span { color: color-mix(in oklab, var(--on-accent) 72%, transparent); }
+  .arrow { display: grid; place-items: center; color: var(--ink-3); }
+  .arrow svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.7; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .under { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 30px; }
+  .under .node { flex-direction: row; align-items: center; gap: 16px; }
+  .under .node .ico { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; color: var(--accent-ink); flex: none; }
+
+  /* ---------- the phone in your pocket ---------- */
+  #pocket { width: 1200px; height: 700px; display: flex; align-items: center; justify-content: center; gap: 70px; }
+  #pocket .handset { width: 320px; height: 620px; margin: 0; }
+  .pocket-screen { background: var(--canvas); color: var(--ink); align-items: center; padding: 0 22px; background-image: var(--glows); }
+  .orb { margin-top: 120px; width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center; position: relative; }
+  .orb::before, .orb::after { content: ""; position: absolute; inset: -18px; border-radius: 50%; border: 1px solid color-mix(in oklab, var(--accent) 22%, transparent); }
+  .orb::after { inset: -40px; border-color: color-mix(in oklab, var(--accent) 11%, transparent); }
+  .orb .wordmark { font-size: 30px; }
+  .heard { margin-top: 64px; text-align: center; font-size: 17px; line-height: 1.4; letter-spacing: -0.015em; }
+  .said { margin-top: 14px; text-align: center; font-size: 14px; color: var(--ink-2); line-height: 1.45; }
+  .pocket-bar { margin-top: auto; margin-bottom: 26px; display: flex; gap: 18px; }
+  .pocket-bar .ib { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-2); }
+  .pocket-bar .ib.end { background: var(--red); color: #fff; box-shadow: var(--e1); }
+  .pocket-copy { width: 460px; }
+  .pocket-copy .line { display: flex; gap: 16px; align-items: flex-start; padding: 18px 0; border-bottom: 1px solid var(--rule); }
+  .pocket-copy .line:last-child { border-bottom: 0; }
+  .pocket-copy .ico { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; color: var(--accent-ink); flex: none; }
+  .pocket-copy b { display: block; font-size: 17px; letter-spacing: -0.015em; margin-bottom: 3px; }
+  .pocket-copy span { color: var(--ink-2); font-size: 14.5px; }
+</style>
+</head>
+<body>
+<script type="module">
+// ---- the tiling: the same construction as frontend/src/lib/penrose.ts and lib/tiledBackground.ts ----
+const PHI = (1 + Math.sqrt(5)) / 2;
+const add = (p, q) => [p[0] + q[0], p[1] + q[1]], sub = (p, q) => [p[0] - q[0], p[1] - q[1]], mul = (p, k) => [p[0] * k, p[1] * k];
+function rhombs(centre, radius, generations, keep) {
+  let tris = [];
+  for (let i = 0; i < 10; i++) {
+    let b = add(centre, mul([Math.cos(((2 * i - 1) * Math.PI) / 10), Math.sin(((2 * i - 1) * Math.PI) / 10)], radius));
+    let c = add(centre, mul([Math.cos(((2 * i + 1) * Math.PI) / 10), Math.sin(((2 * i + 1) * Math.PI) / 10)], radius));
+    if (i % 2 === 0) [b, c] = [c, b];
+    tris.push({ thin: true, a: centre, b, c });
+  }
+  for (let g = 0; g < generations; g++) {
+    const next = [];
+    for (const t of tris) {
+      if (t.thin) { const p = add(t.a, mul(sub(t.b, t.a), 1 / PHI)); next.push({ thin: true, a: t.c, b: p, c: t.b }, { thin: false, a: p, b: t.c, c: t.a }); }
+      else {
+        const q = add(t.b, mul(sub(t.a, t.b), 1 / PHI)), r = add(t.b, mul(sub(t.c, t.b), 1 / PHI));
+        next.push({ thin: false, a: r, b: t.c, c: t.a }, { thin: false, a: q, b: r, c: t.b }, { thin: true, a: r, b: q, c: t.a });
+      }
+    }
+    tris = next;
+  }
+  const seen = new Set(), out = [];
+  for (const t of tris) {
+    const mid = mul(add(t.b, t.c), 0.5), key = `${Math.round(mid[0] * 64)},${Math.round(mid[1] * 64)}`;
+    if (seen.has(key)) continue; seen.add(key);
+    if (keep && !keep(mid)) continue;
+    out.push({ pts: [t.a, t.b, sub(add(t.b, t.c), t.a), t.c], mid });
+  }
+  return out;
+}
+function hash([x, y]) { const s = Math.sin(Math.round(x * 10) * 12.9898 + Math.round(y * 10) * 78.233) * 43758.5453; return s - Math.floor(s); }
+function tiles(w, h, dark, { edge = 44, strength = 0.55, centre = [0.5, 0.5] } = {}) {
+  const dpr = 2, W = w * dpr, H = h * dpr, c = [W * centre[0], H * centre[1]];
+  const canvas = Object.assign(document.createElement("canvas"), { width: W, height: H }), g = canvas.getContext("2d");
+  const radius = Math.hypot(Math.max(c[0], W - c[0]), Math.max(c[1], H - c[1])) * 1.12;
+  const gens = Math.max(1, Math.round(Math.log(radius / (edge * dpr)) / Math.log(PHI))), m = edge * dpr * 2;
+  g.lineJoin = "round"; g.lineWidth = 1.5;
+  g.strokeStyle = dark ? `rgba(255,255,255,${0.06 * strength})` : `rgba(40,44,52,${0.06 * strength})`;
+  for (const t of rhombs(c, radius, gens, ([x, y]) => x > -m && y > -m && x < W + m && y < H + m)) {
+    g.beginPath(); t.pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath();
+    const s = hash(t.mid) * 2 - 1;
+    g.fillStyle = dark ? (s > 0 ? `rgba(255,255,255,${s * 0.03 * strength})` : `rgba(0,0,0,${-s * 0.12 * strength})`)
+                       : (s > 0 ? `rgba(255,255,255,${s * 0.38 * strength})` : `rgba(30,34,44,${-s * 0.026 * strength})`);
+    g.fill(); g.stroke();
+  }
+  return canvas.toDataURL("image/png");
+}
+
+// ---- icons (lucide's shapes, the app's icon set) ----
+const I = {
+  apps: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h6"/>',
+  hand: '<path d="M18 11V6a2 2 0 0 0-4 0v1"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+  key: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+  house: '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .71-1.53l7-6a2 2 0 0 1 2.58 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  swap: '<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>',
+  brain: '<path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  ring: '<path d="M10.27 21a2 2 0 0 0 3.46 0"/><path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"/>',
+  qr: '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
+  download: '<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>',
+  book: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+  terminal: '<path d="m4 17 6-6-6-6"/><path d="M12 19h8"/>',
+  send: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
+  coffee: '<path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/>',
+  briefcase: '<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>',
+  car: '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  checked: '<path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>',
+  micoff: '<path d="M2 2l20 20"/><path d="M18.89 13.23A7 7 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><path d="M12 19v3"/>',
+};
+const icon = (n, extra = "") => `<svg class="i" viewBox="0 0 24 24" ${extra}>${I[n]}</svg>`;
+const tick = '<span class="check"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>';
+const LOGO = "../../../desktop/build/logo.png";
+
+const scenes = {
+  hero: () => `
+    <div id="hero" class="scene marble rounded" data-tiles="1200x620" data-centre="0.5,0.38">
+      <img class="icon" src="${LOGO}">
+      <div class="wordmark name">penrose</div>
+      <h1>Give your agent a phone.</h1>
+      <p class="muted">A real phone for your AI, with your apps on it, signed in as you.
+      Ask in plain words. It runs the errand, and checks with you before it spends.</p>
+    </div>`,
+
+  social: () => `
+    <div id="social" class="scene marble" data-tiles="1280x640" data-centre="0.5,0.4">
+      <img class="icon" src="${LOGO}">
+      <div class="wordmark name">penrose</div>
+      <h1>Give your agent a phone.</h1>
+    </div>`,
+  avatar: () => `<div id="avatar" class="scene"><img src="../../../desktop/build/logo-square.svg"></div>`,
+
+  "button-download": () => `<div class="button-scene"><span class="btn primary">${icon("download")}Download penrose</span></div>`,
+  "button-how": () => `<div class="button-scene"><span class="btn">${icon("book")}How it works</span></div>`,
+  "button-agent": () => `<div class="button-scene"><span class="btn">${icon("terminal")}Use it from Claude Code</span></div>`,
+
+  sees: () => `
+    <div id="sees" class="scene marble rounded" data-tiles="1200x760" data-centre="0.2,0.15">
+      <div>
+        <div class="label">What you see</div>
+        <div class="handset"><div class="screen">
+          <div class="statusbar"><span>9:41</span><span>●●● ▮</span></div>
+          <div class="appbar"><b>Your usual order</b><span class="tag">Sat 9–11 am</span></div>
+          <div class="order">
+            ${[["#f1c34c", "Bananas", "6 ct", "$1.89"], ["#e8e3d6", "Sourdough loaf", "24 oz", "$5.49"], ["#d84a3a", "Strawberries", "1 lb", "$3.99"],
+               ["#cfd8c2", "Oat milk", "Out of stock", "$4.79", 1], ["#f5efe1", "Greek yogurt", "32 oz", "$6.29"], ["#7da35a", "Avocados", "4 ct", "$4.99"],
+               ["#e9b48a", "Eggs, pasture raised", "12 ct", "$7.19"]]
+              .map(([c, t, s, p, out], i) => `<div class="item${out ? " out" : ""}"><span class="num">${i + 4}</span><span class="thumb" style="background:${c}"></span><span class="t">${t}<small>${s}</small></span><span class="p">${p}</span></div>`).join("")}
+          </div>
+          <div class="cta"><span class="num">14</span>Add 11 items to cart · $48.20<span class="tap"></span></div>
+        </div></div>
+      </div>
+      <div>
+        <div class="label">What your agent sees</div>
+        <div class="agent well"><span class="k">Screen</span>  <span class="d">Market › UsualOrderActivity</span>
+<span class="n">[1]</span> Button <span class="s">"Back"</span>
+<span class="n">[2]</span> Text <span class="s">"Your usual order"</span>
+<span class="n">[3]</span> List items  <span class="d">11 rows, 4 below the fold</span>
+<span class="n">[4]</span>   Row <span class="s">"Bananas, 6 ct · $1.89"</span>  <span class="d">list=items#1/11</span>
+<span class="n">[5]</span>   Row <span class="s">"Sourdough loaf, 24 oz · $5.49"</span>  <span class="d">#2/11</span>
+<span class="n">[6]</span>   Row <span class="s">"Strawberries, 1 lb · $3.99"</span>  <span class="d">#3/11</span>
+<span class="n">[7]</span>   Row <span class="s">"Oat milk · Out of stock"</span>  <span class="d">#4/11 {disabled}</span>
+<span class="d">     … rows 5–11 read without scrolling</span>
+<span class="n">[14]</span> Button <span class="s">"Add 11 items to cart · $48.20"</span>
+
+<span class="hl"><span class="cmd">› relay phone tap 14</span></span>
+<span class="ok">tapped [14] → now on CartActivity "Cart · 10 items"</span>
+<span class="k">Events</span>  <span class="d">toast</span> <span class="s">"1 item unavailable: Oat milk"</span></div>
+      </div>
+    </div>`,
+
+  ask: () => `
+    <div id="ask" class="scene marble rounded" data-tiles="1200x720" data-centre="0.85,0.1">
+      <div class="convo panel">
+        <div class="you">Reorder last week’s groceries for Saturday morning. Swap anything that’s out of stock.</div>
+        <div class="reply"><img class="avatar" src="${LOGO}"><div style="flex:1;display:flex;flex-direction:column;gap:14px">
+          <div>On it. Your usual Market order, delivered Saturday between 9 and 11.</div>
+          <div class="run clay">
+            <div class="step">${tick}Opened last week’s order<span class="faint">4 s</span></div>
+            <div class="step">${tick}Added 10 of 11 items to the cart<span class="faint">9 s</span></div>
+            <div class="step">${tick}Chose Saturday, 9–11 am<span class="faint">6 s</span></div>
+            <div class="step"><span class="pending"></span>Oat milk is out of stock</div>
+          </div>
+          <div class="askcard clay">
+            <div class="head"><span class="dot" style="background:var(--amber)"></span>Needs you</div>
+            <div>Oat milk is out. The closest match is Oat Barista, 32 oz, $4.99 (yours was $4.79). Swap it in?</div>
+            <div class="options"><span class="btn primary">Swap it in</span><span class="btn">Skip oat milk</span><span class="btn">Show me options</span></div>
+          </div>
+        </div></div>
+        <div class="composer well">Ask penrose…<span class="send btn primary" style="padding:0;height:34px">${icon("send", 'style="width:18px;height:18px"')}</span></div>
+      </div>
+    </div>`,
+
+  day: () => `
+    <div id="day" class="scene marble rounded" data-tiles="1200x560" data-centre="0.5,1.1">
+      <div class="moments">
+        ${[["coffee", "7:40 am", "Over coffee", "What did I miss?",
+            "Three things. Sam moved dinner to 7:30, your package comes today, and your landlord asked about Thursday.", "Read from your notifications"],
+           ["briefcase", "12:15 pm", "Between meetings", "Reorder the usual groceries for Saturday morning.",
+            "In your cart for Saturday, 9 to 11. The oat milk is out. Swap in the closest match?", "Asks before it swaps", 1],
+           ["car", "5:40 pm", "In the pickup line", "Table for six on Friday around 7, Italian. Tell the group chat.",
+            "Booked: Friday at 7:15, table for six. The group chat knows.", "Booked, then checked"],
+           ["moon", "9:10 pm", "On the couch", "The blender came cracked. Start a return.",
+            "Return started. $89 goes back to your card, and the drop-off code is in your email.", "Checked on the phone"]]
+          .map(([i, time, where, you, back, proof, ask]) => `<div class="moment">
+            <span class="when clay">${icon(i)}${time}</span>
+            <div class="card clay rounded" style="border-radius:22px">
+              <span class="where">${where}</span>
+              <div class="you">“${you}”</div>
+              <div class="back"><img src="${LOGO}"><span>${back}</span></div>
+              <div class="proof">${ask ? '<span class="pending"></span>' : tick}${proof}</div>
+            </div></div>`).join("")}
+      </div>
+    </div>`,
+
+  call: () => `
+    <div id="call" class="scene marble rounded" data-tiles="1200x700" data-centre="0.12,0.2">
+      <div class="convo panel">
+        <div class="you">Call Luigi’s on WhatsApp and ask if they can seat six this Friday around 7.</div>
+        <div class="reply"><img class="avatar" src="${LOGO}"><div style="flex:1;display:flex;flex-direction:column;gap:14px">
+          <div>Calling Luigi’s now.</div>
+          <div class="callcard clay">
+            <div class="top"><span class="ico well">${icon("phone")}</span><div><b>Call with Luigi’s</b><small>WhatsApp · 58 s</small></div>
+              <span class="ended">${tick}Call ended</span></div>
+            <div class="said2">
+              <span class="who">penrose</span><span>Hi, this is penrose, calling for Alex. Could you seat six this Friday, around seven?</span>
+              <span class="who">Luigi’s</span><span>Friday… for six I have 6:45, or 8:15.</span>
+              <span class="who">penrose</span><span>6:45 or 8:15 for six on Friday. Thank you, I’ll pass that on. Goodbye.</span>
+            </div>
+          </div>
+          <div>Luigi’s can seat six on Friday at 6:45 or at 8:15. Nothing is booked yet. Which would you like?</div>
+        </div></div>
+        <div class="composer well">Ask penrose…<span class="send btn primary" style="padding:0;height:34px">${icon("send", 'style="width:18px;height:18px"')}</span></div>
+      </div>
+    </div>`,
+
+  features: () => `
+    <div id="features" class="scene marble rounded" data-tiles="1200x700" data-centre="0.1,0.9">
+      ${[["hand", "Asks before it spends", "Which product, which address, which card: real choices stop for you. An order is never padded, and never placed twice."],
+         ["key", "Never sees your passwords", "Passwords fill from the phone’s own password manager. One-time codes go from you straight to the phone, never to an AI model."],
+         ["shield", "Can’t do what you’d regret", "The phone itself refuses to delete your email. Banking, wallet, brokerage and crypto apps are off limits, by design."],
+         ["checked", "Checks its own work", "A second agent opens the cart, the booking or the sent message and confirms it is really there before you hear “done”."],
+         ["undo", "Hands the phone back", "Reach in and tap whenever you like. When the job is done, or after five quiet minutes, the phone is yours again."],
+         ["house", "Stays in your house", "The phone, its sign-ins and your chat history live on your computer. We run no servers and hold no copy of your accounts."]]
+        .map(([i, t, p]) => `<div class="card clay"><div class="ico well">${icon(i)}</div><h3>${t}</h3><p>${p}</p></div>`).join("")}
+    </div>`,
+
+  how: () => `
+    <div id="how" class="scene marble rounded" data-tiles="1200x520" data-centre="0.5,0.5">
+      <div class="flow">
+        <div class="node clay"><span class="k">You</span><b>Ask in plain words</b><span>“A table for two on Saturday.”</span></div>
+        <div class="arrow"><svg viewBox="0 0 24 24">${I.arrow}</svg></div>
+        <div class="node clay"><span class="k">Front desk</span><b>Answers or hands on</b><span>Simple questions get an answer at once.</span></div>
+        <div class="arrow"><svg viewBox="0 0 24 24">${I.arrow}</svg></div>
+        <div class="node main"><span class="k">Your agent</span><b>Plans, delegates, asks</b><span>Breaks the errand into steps and is the only one who talks to you.</span></div>
+        <div class="arrow"><svg viewBox="0 0 24 24">${I.swap}</svg></div>
+        <div class="node clay"><span class="k">On the phone</span><b>A fresh pair of hands per step</b><span>Looks, acts, reports back.</span></div>
+      </div>
+      <div class="under">
+        <div class="node clay"><span class="ico well">${icon("shield")}</span><div><b>A verifier checks every claim</b><br><span>Independently, on the phone: if a step says “added to cart”, it opens the cart and looks.</span></div></div>
+        <div class="node clay"><span class="ico well">${icon("brain")}</span><div><b>Memory you can read</b><br><span>Your usual order, your people, how you write: kept as notes you can see and edit.</span></div></div>
+      </div>
+    </div>`,
+
+  pocket: () => `
+    <div id="pocket" class="scene marble rounded" data-tiles="1200x700" data-centre="0.75,0.2">
+      <div class="handset"><div class="screen pocket-screen">
+        <div class="statusbar" style="width:100%;color:var(--ink)"><span>8:12</span><span>●●● ▮</span></div>
+        <div class="orb clay"><span class="wordmark">penrose</span></div>
+        <div class="heard">“What did I miss this morning?”</div>
+        <div class="said">Three things. Sam moved dinner to 7:30, your package arrives today, and the landlord asked about Thursday…</div>
+        <div class="pocket-bar"><span class="ib clay">${icon("micoff")}</span><span class="ib end">${icon("phone")}</span></div>
+      </div></div>
+      <div class="pocket-copy">
+        <div class="line"><span class="ico well">${icon("mic")}</span><div><b>Talk to it like a person</b><span>The phone app opens listening. A live voice answers at once while the work starts.</span></div></div>
+        <div class="line"><span class="ico well">${icon("ring")}</span><div><b>It rings when it needs you</b><span>Like a call, even with the app in the background: a question, a code, a done.</span></div></div>
+        <div class="line"><span class="ico well">${icon("qr")}</span><div><b>One QR code, end-to-end encrypted</b><span>Your pocket talks straight to your computer. Nobody in between can read it.</span></div></div>
+      </div>
+    </div>`,
+};
+
+const q = new URLSearchParams(location.search);
+const dark = q.get("theme") === "dark";
+document.documentElement.dataset.theme = dark ? "dark" : "light";
+document.body.innerHTML = scenes[q.get("scene") || "hero"]();
+const scene = document.querySelector(".scene");
+if (scene?.dataset.tiles) {
+  const [w, h] = scene.dataset.tiles.split("x").map(Number);
+  const centre = (scene.dataset.centre || "0.5,0.5").split(",").map(Number);
+  scene.style.setProperty("--tiles", `url(${tiles(w, Math.max(h, scene.offsetHeight), dark, { centre })})`);
+}
+await document.fonts.ready;
+await Promise.all([...document.images].map((im) => im.complete ? 0 : new Promise((r) => (im.onload = im.onerror = r))));
+document.title = "ready";
+</script>
+</body>
+</html>

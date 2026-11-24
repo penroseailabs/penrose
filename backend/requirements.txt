@@ -1,0 +1,18 @@
+# What the packaged relay-server needs. Development and tests: requirements-dev.txt.
+fastapi>=0.115,<1
+# uvicorn without [standard]: watchfiles (auto-reload) and the rest are not used by the app.
+uvicorn>=0.34,<1
+httptools>=0.6,<1
+httpx>=0.28,<1
+pydantic-settings>=2.8,<3
+websockets>=14,<18
+pillow>=10.4,<13
+grpcio>=1.66,<2
+anthropic>=1.17,<2
+# Companion phone pairing and its end-to-end encrypted tunnel (app/companion).
+cryptography>=43,<47
+# Reading PDFs a user attaches to a message (app/attachments.py).
+pypdf>=5,<7
+
+# The user's time zone (store.zone): Windows has no system time zone database, so without it every zone was UTC.
+tzdata>=2024.1

@@ -1,0 +1,47 @@
+name: Something went wrong
+description: penrose did the wrong thing, got stuck, or would not start
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. Before you attach a log or a screenshot, check it for anything private: they can show your messages, orders and address.
+        For a security problem, do not use this form: see SECURITY.md.
+  - type: textarea
+    id: asked
+    attributes:
+      label: What did you ask penrose to do?
+      description: The words you used, and which app it was in.
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: penrose version
+      description: In the penrose menu, under About.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Your computer
+      options: [Windows, macOS, Linux]
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: AI model
+      description: For example Claude Sonnet, GPT or DeepSeek, or "Claude Code" if you drove the phone from there.

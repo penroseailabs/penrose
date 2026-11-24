@@ -1,0 +1,34 @@
+**/.env
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+.venv/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-companion/
+frontend/*.tsbuildinfo
+data/**
+!data/.gitignore
+*.log
+desktop/node_modules/
+desktop/dist/
+desktop/vendor/
+backend/dist/
+backend/build/
+backend/*.spec
+desktop/.env.local
+desktop/.dev-login.json
+# Local leftovers: extra virtualenvs, personal prompt notes
+.venv-*/
+backend/.venv-*/
+prompts/
+
+# macOS folder metadata
+.DS_Store
+
+# Local helper: redeploy the phone app (PWA)
+/redeploy-pwa.py
+
+# Coding-assistant instructions and settings, kept on each developer's computer
+/CLAUDE.md
+/.claude/

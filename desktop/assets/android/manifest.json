@@ -1,0 +1,30 @@
+{
+  "golden_generation": 1,
+  "artifacts": [
+    {
+      "id": "relay-device-profile",
+      "kind": "boot-script",
+      "file": "relay-device-profile.sh"
+    },
+    {
+      "id": "relay-bridge",
+      "kind": "apk",
+      "file": "relay-bridge.apk",
+      "package": "app.relay.bridge",
+      "xposed_module": true
+    },
+    {
+      "id": "relay-autoscope",
+      "kind": "magisk-module",
+      "file": "relay-autoscope.zip",
+      "module": "relay_autoscope"
+    },
+    {
+      "id": "relay-home",
+      "kind": "apk",
+      "file": "relay-home.apk",
+      "package": "app.relay.home",
+      "home": true
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<!-- Shown while Relay's services start; the app's own boot screen looks the same, so the hand-over is seamless. -->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'" />
+    <meta name="color-scheme" content="light dark" />
+    <title>penrose</title>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+        background: #e7e8eb; color: #a0a3aa; -webkit-app-region: drag; user-select: none;
+        font: 12.5px/1.6 "Segoe UI Variable Text", -apple-system, "SF Pro Text", system-ui, sans-serif;
+      }
+      .mark {
+        width: 30px; height: 30px; border-radius: 9px;
+        background: linear-gradient(160deg, #d9b4a8, #c99282);
+        box-shadow: 1px 2px 4px rgba(201, 146, 130, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        animation: breathe 2.4s cubic-bezier(0.25, 0.8, 0.25, 1) infinite;
+      }
+      /* Only if starting takes a while does it say anything. */
+      p { margin: 0; opacity: 0; animation: show 0.6s ease 6s forwards; }
+      @keyframes breathe { 50% { opacity: 0.35; } }
+      @keyframes show { to { opacity: 1; } }
+      @media (prefers-color-scheme: dark) {
+        body { background: #1e1f23; color: #686b73; }
+        .mark { background: linear-gradient(160deg, #d8b3a6, #c99a8b); box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2); }
+      }
+    </style>
+  </head>
+  <body>
+    <span class="mark"></span>
+    <p>Starting penrose…</p>
+  </body>
+</html>
