@@ -97,10 +97,21 @@ def start(data: Path, window: bool, memory: int, grpc: int | None = None):
         # As penrose starts its own phone (desktop/src/main.js): without it a test phone can drop to its slow clock
         # (hpet) within minutes and everything measured on it is 1.5 to 2 times slower. Last: the rest goes to qemu.
         args += ["-qemu", "-append", "tsc=nowatchdog"]
-    with open(logs / f"test-phone-{port}.log", "w") as log:
-        subprocess.Popen(args, env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                         start_new_session=not WINDOWS,
-                         creationflags=(subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP) if WINDOWS else 0)
+    log_path = logs / f"test-phone-{port}.log"
+    launcher = Path(__file__).resolve().parent.parent / "backend" / "app" / "phone_desktop.py"
+    if WINDOWS and not window and launcher.exists():
+        # As penrose starts its own phone: on a desktop of its own (backend/app/phone_desktop.py has why). On the
+        # desktop the user works on, the windows the OpenGL driver keeps for the phone are slow to make, the phone
+        # stops drawing for seconds to minutes as their number grows, and so do the user's own programs. A phone
+        # with a window to look at (--window) has to be on the user's desktop.
+        log_path.write_text("")
+        subprocess.run([sys.executable, str(launcher), "--detach", "--log", str(log_path), "--", *args], env=env,
+                       stdin=subprocess.DEVNULL, check=True)
+    else:
+        with open(log_path, "w") as log:
+            subprocess.Popen(args, env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                             start_new_session=not WINDOWS,
+                             creationflags=(subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP) if WINDOWS else 0)
     deadline = time.monotonic() + 300
     while time.monotonic() < deadline:
         if adb(sdk, "-s", serial, "shell", "getprop sys.boot_completed").strip() == "1":

@@ -58,9 +58,21 @@ An emulator can also freeze with its process still there (2026-11-09: the comput
 the emulator could not allocate). Nothing exits and adb keeps listing the phone, so the gateway asks it whether it
 still answers: every minute, and at once when an adb call runs out of time (`backend/app/gateway/watch.py`). Silent
 three times in a row, the phone stops counting as ready and the gateway asks the app to restart it
-(`restartFrozenPhone` in `desktop/src/main.js`, over the control server): the app ends the emulator's process and
+(`restartPhone` in `desktop/src/main.js`, over the control server): the app ends the emulator's process and
 starts the phone again, cold. Tasks and look-ups wait for it as for any phone that is starting. It is not restarted
-twice within ten minutes; a phone that freezes again that soon is reported to the user instead.
+twice within ten minutes; a phone that freezes again that soon is reported to the user instead. The same restart
+answers a phone whose Android is gone while adb still answers (system_server ended and not started again, for 90 s),
+one that adb lists as offline for two minutes, and one whose setup gave up before Android booted. After three
+restarts in a row that each end with the phone down again, the gateway stops and shows the phone as broken.
+
+On Windows the emulator runs on a desktop of its own that is never shown (`backend/app/phone_desktop.py`, started
+through `relay-server emulator`). NVIDIA's OpenGL driver keeps a hidden window for each of the phone's drawing
+surfaces, in a pool that grows as Android kills app processes and doubles when it runs out; on the desktop the user
+works on, making those windows stopped the phone's drawing for 9 s to minutes at a time, until Android's watchdog
+ended system_server. On its own desktop the same doublings take under 3 s up to a pool of 512. Only a new emulator
+process empties the pool, so the gateway counts the emulator's windows once a minute (`backend/app/gateway/budget.py`)
+and has the app restart the phone (about half a minute, nothing on the phone lost): past 350 windows as soon as
+nobody uses the phone, past 1,100 between two steps of whatever holds it.
 
 The phone runs with `-feature -Vulkan`. With Vulkan inside the phone the emulator refused to save the snapshot
 whenever Chrome or a WebView held a Vulkan context ("Not saving state ... UNSUPPORTED_VK_APP") and deleted the old

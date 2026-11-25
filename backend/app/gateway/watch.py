@@ -4,7 +4,8 @@
     starting  listed, and Android is booting or the screen lock still holds its storage
     hooking   up, waiting for relay-bridge in the home app (and restarting the phone when it never comes)
     ready     anyone may lease it
-    broken    relay-bridge never came back, even after restarts (framework.py): nothing on it can be read
+    broken    relay-bridge never came back, even after restarts (framework.py): nothing on it can be read; or the
+              phone froze or lost Android again after each of several restarts (MAX_RESTARTS, below)
 
 `setup` is separate: while the desktop app brings the phone up to date (provision device-ready installs, reboots,
 restarts System UI), it holds the phone, and leases wait (PUT /devices/{slot}/setup).
@@ -18,7 +19,9 @@ What moves a phone from one state to the next, all of it pushed, nothing checked
 
 One thing sends no change at all: an emulator that freezes. adb keeps listing it and every connection to it stays
 open. So the one question "does it answer adb?" is asked on a timer, and at once when an adb call to it runs out of
-time; a phone that stays silent stops counting as ready and the desktop app is asked to restart it (below).
+time; a phone that stays silent stops counting as ready and the desktop app is asked to restart it (below). With
+the same question: whether Android is still there under a phone that answers (it can be gone for good), and how
+many hidden windows the emulator holds (gateway/budget.py).
 
 Waiters (a lease that waits for the phone, the API's update stream) wait on `changed()`."""
 
@@ -168,6 +171,7 @@ async def track():
                 seen = dict(line.split("\t")[:2] for line in listing.splitlines() if line.count("\t") >= 1)
                 for slot, serial in core.slots.items():
                     present(slot, seen.get(serial) == "device")
+                    listed(slot, seen.get(serial))
         except asyncio.CancelledError:
             raise
         except Exception as exc:  # adb's server restarted or is starting: the phones are unknown until it lists them
@@ -177,6 +181,7 @@ async def track():
                 writer.close()
         for slot in core.slots:
             present(slot, False)
+            listed(slot, None)
         await asyncio.sleep(pause)
         pause = min(pause * 2, 5)
 
@@ -249,7 +254,12 @@ async def _check(slot):
         _restart(slot, f"still locked {LOCK_GRACE} s after booting: relay-bridge's unlocker is not running")
         return
     _set(slot, HOOKING)
-    installed = b"package:" in await core.adb(slot, "shell", f"pm path {HOME}", timeout=10)
+    answer = await core.adb(slot, "shell", f"pm path {HOME}", include_stderr=True, timeout=10)
+    installed = b"package:" in answer
+    if not installed and b"find service" in answer:
+        # "cmd: Can't find service: package": Android is not up under a phone that says it booted (system_server
+        # is starting again, or gone for good). Not "no home app": that counted such a phone as ready.
+        raise RuntimeError("Android's package service is not up")
     if installed:
         # The home app is the home screen and starts with Android; its relay-bridge socket says Vector is in Android.
         if not await _on_phone(slot, _until(f"grep -q '{HOME_SOCKET}$' /proc/net/unix"), HOOK_GRACE):
@@ -367,6 +377,12 @@ async def _alive(slot):
                     if slot in frozen:
                         _thawed(slot)
                     await _clock(slot)
+                    if await _android_gone(slot):
+                        await _stopped(slot)
+                    else:
+                        _steady(slot)
+                        for check in alive_checks:
+                            await check(slot)
             except asyncio.CancelledError:
                 raise
             except Exception as exc:  # adb itself failed: the phone is going or gone, and the device list says so
@@ -407,12 +423,121 @@ async def _clock(slot):
               "Kernel: %s", slot, f", was {before}" if before else ", as found", " | ".join(line.strip() for line in said.splitlines() if line.strip()) or "nothing in its log")
 
 
+# --- an Android that is gone under a phone that still answers -------------------------------------------------------
+# Seen 2026-11-26: the emulator's drawing stalled (gateway/budget.py), Android's watchdog ended system_server, and
+# system_server stayed a zombie: one of its threads never left the kernel, so Android never started again. adb
+# answered every question, the phone counted as ready, and nothing was done for 40 minutes. Android normally
+# starts again by itself within seconds of losing system_server; only one that stays gone is restarted here, the
+# same way as a frozen phone (its emulator ended and started: a cold boot, nothing written to the phone is lost).
+
+ANDROID = "getprop sys.boot_completed; service check activity"  # "1", then "Service activity: found" / "not found"
+ANDROID_GRACE = 90  # seconds Android may be gone after it had booted: longer than its own restart takes
+ANDROID_PAUSE = 10  # between the questions meanwhile
+STOPPED = "restarting: Android stopped"
+alive_checks = []  # callbacks(slot), asked with "do you answer" on a phone whose Android is up (gateway/budget.py)
+
+
+async def _android_up(slot):
+    """True: Android's services answer. False: the phone booted and they are gone. None: still booting (or the
+    question got no usable answer: nothing is decided on that)."""
+    try:
+        said = (await core.adb(slot, "shell", ANDROID, timeout=ALIVE_TIMEOUT)).decode(errors="replace").split("\n", 1)
+    except TimeoutError:
+        return None
+    if said[0].strip() != "1" or len(said) < 2 or "Service activity" not in said[1]:
+        return None
+    return "not found" not in said[1]
+
+
+async def _android_gone(slot):
+    """Whether Android has been gone for ANDROID_GRACE on a phone that had booted. While the desktop app updates
+    the phone it restarts Android itself (device-ready), so nothing is judged then."""
+    if slot in setup or await _android_up(slot) is not False:
+        return False
+    deadline = time.monotonic() + ANDROID_GRACE
+    while time.monotonic() < deadline:
+        await asyncio.sleep(ANDROID_PAUSE)
+        if slot in setup or await _android_up(slot) is not False:
+            log.info("%s: Android was gone for a moment and is starting again by itself", slot)
+            return False
+    return True
+
+
+async def _stopped(slot):
+    if _spent(slot):
+        return
+    _set(slot, STARTING, STOPPED)
+    log.error("%s: the phone answers adb, but Android has been gone for %d s (no activity service) and is not "
+              "starting again. Asking the desktop app to restart the phone", slot, ANDROID_GRACE)
+    await ask_restart(slot)
+
+
+# --- a phone adb lists but cannot talk to --------------------------------------------------------------------------
+# Seen 2026-11-26: an emulator started from its quick-boot snapshot came up "offline" on adb and stayed so (its
+# console answered, restarting adb's server changed nothing). To everything above that is a phone that has not
+# started, so nothing was done and the window said "Starting" for 35 minutes. A booting emulator is offline for
+# seconds; one that is listed and still no device after UNREACHABLE_SECONDS is restarted like a frozen one, and
+# asked about again that often while it stays so (the desktop app restarts at most once in ten minutes).
+
+UNREACHABLE_SECONDS = 120
+UNREACHABLE = "restarting: the phone is offline on adb"
+unreachable = {}  # slot -> the task counting, while adb lists the phone as something other than a device
+
+
+def listed(slot, status):
+    """adb's word for the phone ("device", "offline", "unauthorized"...), or None when it does not list it."""
+    if status and status != "device":
+        if slot not in unreachable or unreachable[slot].done():
+            unreachable[slot] = asyncio.create_task(_unreachable(slot, status))
+    elif task := unreachable.pop(slot, None):
+        task.cancel()
+
+
+async def _unreachable(slot, status):
+    while True:
+        await asyncio.sleep(UNREACHABLE_SECONDS)
+        if _spent(slot):
+            return
+        _set(slot, STARTING, UNREACHABLE)
+        log.error("%s: adb has listed the phone as %s for %d s: it is not coming up. Asking the desktop app to "
+                  "restart it", slot, status, UNREACHABLE_SECONDS)
+        await ask_restart(slot)
+
+
+# Never a loop. The desktop app restarts a phone at most once in ten minutes (PHONE_RESTART_GAP_MS), and here the
+# restarts are counted: a phone that froze or lost Android again after each of MAX_RESTARTS restarts in a row is
+# left as it is and shown as broken, for the user to look at. A phone that then stays ready for STEADY_SECONDS
+# counts as recovered, and so does one the user starts again with the app (this process starts with it).
+MAX_RESTARTS = 3
+STEADY_SECONDS = 600
+restarted = {}  # slot -> restarts the desktop app did since the phone was last steady
+
+
+def _spent(slot):
+    """Whether this phone has used up its restarts; then it is marked broken (once) and not restarted again."""
+    if restarted.get(slot, 0) < MAX_RESTARTS:
+        return False
+    if state(slot) != BROKEN:
+        log.error("%s: restarted %d times in a row and it stopped again each time: not restarting it again",
+                  slot, MAX_RESTARTS)
+        _set(slot, BROKEN, f"the phone stopped again after each of {MAX_RESTARTS} restarts")
+    return True
+
+
+def _steady(slot):
+    if slot in restarted and state(slot) == READY and time.time() - states[slot]["since"] >= STEADY_SECONDS:
+        del restarted[slot]
+        log.info("%s: the phone has stayed up since it was restarted", slot)
+
+
 async def _frozen(slot):
     """The phone does not answer: it stops counting as ready, and the desktop app is asked to restart it. When it
     is restarted, adb loses it and finds it again, and it is followed from boot as any phone. Left running (no
     desktop app, or one that will not restart it again so soon), it is asked again later: see _thawed."""
     first = slot not in frozen
     frozen.add(slot)
+    if _spent(slot):
+        return
     _set(slot, STARTING, FROZEN)
     if first:
         log.error("%s: adb lists the phone, but it did not answer %d times in a row (%d s each): it is frozen. "
@@ -429,10 +554,20 @@ def _thawed(slot):
     tasks[slot] = asyncio.create_task(_follow(slot))
 
 
+_asking = {}  # slot -> the request to the desktop app in flight
+
+
 async def ask_restart(slot):
     """Ask the desktop app, which owns the emulator, to end the frozen one and start the phone again (it finds
-    the emulator's processes itself). When it does, adb loses the phone and this task ends with it, usually before
-    the answer is back; an answer that arrives says why the phone was not restarted."""
+    the emulator's processes itself). When it does, adb loses the phone and the task that asked ends with it,
+    usually before the answer is back: the request is a task of its own, so its answer is still read (a restart
+    that was done is counted, see MAX_RESTARTS); an answer also says why the phone was not restarted."""
+    if slot not in _asking or _asking[slot].done():
+        _asking[slot] = asyncio.create_task(_ask_restart(slot))
+    await asyncio.shield(_asking[slot])
+
+
+async def _ask_restart(slot):
     if not (settings.desktop_control_url and settings.desktop_phone_token):
         log.error("%s: frozen, and no desktop app to restart it", slot)
         return
@@ -441,6 +576,9 @@ async def ask_restart(slot):
             reply = await client.post(f"{settings.desktop_control_url}/phone/restart",
                                       headers={"Authorization": f"Bearer {settings.desktop_phone_token}"})
         log.warning("%s: the desktop app answered the restart request: %s", slot, reply.text[:200])
+        with contextlib.suppress(ValueError, AttributeError):
+            if reply.json().get("restarted"):
+                restarted[slot] = restarted.get(slot, 0) + 1
     except (httpx.HTTPError, OSError) as exc:
         log.error("%s: could not ask the desktop app to restart the phone: %s", slot, exc)
 
@@ -466,7 +604,7 @@ async def start():
 
 async def close():
     global _tracker
-    for task in [_tracker, *tasks.values(), *watchdogs.values()]:
+    for task in [_tracker, *tasks.values(), *watchdogs.values(), *_asking.values(), *unreachable.values()]:
         if task:
             task.cancel()
             with contextlib.suppress(BaseException):
@@ -474,4 +612,6 @@ async def close():
     _tracker = None
     tasks.clear()
     watchdogs.clear()
+    _asking.clear()
+    unreachable.clear()
     frozen.clear()

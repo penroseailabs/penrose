@@ -14,7 +14,8 @@ the worker reach it over HTTP with the per-launch GATEWAY_TOKEN; a durable exclu
     notices.py   each phone's notifications, heard as they arrive (a read held open on the module's listener)
     scope.py     a lease limited to some apps (a task a notification woke), enforced on every action
     sleep.py     the phone sleeps when nobody uses it, and wakes before anything does
-    grants.py    notification and location permissions granted as apps are installed, so no dialog asks
+    budget.py    the emulator's hidden windows kept few: past a limit the desktop app is asked to restart it
+    grants.py   notification and location permissions granted as apps are installed, so no dialog asks
     simple_signins.py  the screen lock and Chrome sync that Google Password Manager's sign-ins need
     saved_signins.py   which accounts have a saved passkey or password for the site or app on screen, read-only
     app_data.py  read-only queries on an app's own database on the phone (a copy), for Highways
@@ -34,6 +35,7 @@ from ..models import Action
 from . import (
     actions,
     app_data,
+    budget,
     call_audio,
     core,
     devices,
@@ -64,6 +66,7 @@ async def lifespan(app):
     yield
     await grants.close()
     await notices.close()
+    await budget.close()
     await watch.close()
     for hub in screen.hubs.values():
         if hub.task:
@@ -94,16 +97,27 @@ UNCOUNTED = {"notifications/events"}
 # being restarted, as a lease does (devices.acquire), rather than run into a phone that cannot answer yet.
 UNLEASED = {"home/search", "web/search", "play/search"}
 READY_WAIT_SECONDS = 45
+# Not requests on the phone that the emulator could be stopped under (gateway/budget.py): the two that stay open
+# for as long as the phone is up, and the desktop app saying it is (or is no longer) updating the phone.
+HELD_OPEN = UNCOUNTED | {"stream", "setup"}
 
 
 @app.middleware("http")
 async def phone_activity(request: Request, call_next):
     """Wake the phone before a request that uses it; after any request on it, count down to sleep again
-    (gateway/sleep.py; not while someone holds a lease)."""
+    (gateway/sleep.py; not while someone holds a lease). A request on the phone also waits out an emulator that
+    is being started again, and none is started again under one (gateway/budget.py)."""
     parts = request.url.path.strip("/").split("/", 2)
     if len(parts) < 3 or parts[0] != "devices" or parts[1] not in core.slots:
         return await call_next(request)
     slot, rest = parts[1], parts[2]
+    if rest in HELD_OPEN:
+        return await _phone_request(request, call_next, slot, rest)
+    async with budget.using(slot, rest):
+        return await _phone_request(request, call_next, slot, rest)
+
+
+async def _phone_request(request, call_next, slot, rest):
     if rest in UNLEASED and not await watch.until_ready(slot, READY_WAIT_SECONDS):
         return JSONResponse({"detail": "The phone is starting. Try again in a minute."}, status_code=503)
     if rest not in QUIET and (request.method != "GET" or rest == "saved-signins"):

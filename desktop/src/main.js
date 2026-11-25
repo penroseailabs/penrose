@@ -409,6 +409,15 @@ function adbState() {
   });
 }
 
+/** Whether Android on the phone says it finished booting (false too when adb cannot reach the phone). */
+function phoneBooted() {
+  return new Promise((resolve) => {
+    if (!androidStatus?.adb) return resolve(false);
+    execFile(androidStatus.adb, ["-s", SERIAL, "shell", "getprop", "sys.boot_completed"], { windowsHide: true, timeout: 10000 },
+      (error, stdout) => resolve(!error && stdout.trim() === "1"));
+  });
+}
+
 let adoptedPhone = false; // a phone left running by a launch that crashed, which this launch took over
 
 // The phone's share of this computer: 20% of its memory (3 GB at least) and half its logical processors (4 to 6:
@@ -428,6 +437,26 @@ function phoneSize() {
 // device-ready does about a kernel already on hpet: backend/app/provision (fast_clock). Everything after -qemu
 // goes to qemu itself, so these stay last.
 const FAST_CLOCK_ARGS = process.platform === "win32" ? ["-qemu", "-append", "tsc=nowatchdog"] : [];
+
+// Windows: the emulator runs on a desktop of its own, never shown. The computer's OpenGL driver keeps a hidden
+// window for each of the phone's drawing surfaces, in a pool that grows as Android kills app processes, and on the
+// desktop the user works on each of those windows took 57 to 121 ms to make: the phone stopped drawing for 9 s to
+// minutes each time the pool doubled, until Android's watchdog ended system_server, and every other program's
+// windows opened slowly too (2026-11-26; backend/app/phone_desktop.py has the measurements). Node cannot name a
+// desktop for a process it starts, so the emulator is started by `relay-server emulator`, which can; it stays for
+// as long as the emulator runs, passes on what it writes and ends with its exit code, so this app follows it as it
+// followed the emulator. The gateway keeps the pool small (backend/app/gateway/budget.py, restartPhone below).
+const OWN_DESKTOP = process.platform === "win32";
+// Until the emulator ends within a minute of starting there (a graphics driver that will not draw on a desktop
+// nobody sees is the guess; not seen so far): this launch then starts it on the user's desktop, as it always was.
+let ownDesktop = OWN_DESKTOP;
+let expectedExit = false; // restartPhone is ending the emulator: its exit is no crash
+
+/** The command that starts the emulator: itself, or on Windows through `relay-server emulator`. */
+function emulatorCommand(args, options = []) {
+  if (!ownDesktop) return { command: androidStatus.emulator, args, cwd: undefined };
+  return serverCommand(["emulator", ...options, "--", androidStatus.emulator, ...args]);
+}
 
 async function startEmulator() {
   if (!androidStatus?.phone_ready || children.has("emulator") || adoptedPhone) return;
@@ -482,12 +511,11 @@ async function startEmulator() {
     try {
       fs.appendFileSync(log, startLine);
     } catch {}
-    if (process.platform === "win32") {
-      const quote = (s) => `'${s.replace(/'/g, "''")}'`;
-      const line = `/d /s /c ""${androidStatus.emulator}" ${args.join(" ")} >> "${log}" 2>&1"`;
-      const script = `Start-Process -FilePath cmd.exe -ArgumentList ${quote(line)} -WindowStyle Hidden`;
-      spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")],
-        { env, windowsHide: true, stdio: "ignore" });
+    if (OWN_DESKTOP) {
+      // Detached by the launcher: it gives the emulator a console without a window, which its helpers (qemu,
+      // netsimd) share, hands it the log and nothing else of this process's, and leaves once it is up.
+      const launch = emulatorCommand(args, ["--detach", "--log", log]);
+      spawn(launch.command, launch.args, { env, cwd: launch.cwd, windowsHide: true, stdio: "ignore" });
     } else {
       const fd = fs.openSync(log, "a");
       spawn(androidStatus.emulator, args, { env, detached: true, stdio: ["ignore", fd, fd] }).unref();
@@ -496,7 +524,8 @@ async function startEmulator() {
   } else {
     const out = logStream("emulator");
     out.write(startLine);
-    const child = spawn(androidStatus.emulator, args, { env, windowsHide: true });
+    const launch = emulatorCommand(args);
+    const child = spawn(launch.command, launch.args, { env, cwd: launch.cwd, windowsHide: true });
     const started = Date.now();
     child.stdout.pipe(out);
     child.stderr.pipe(out);
@@ -504,15 +533,26 @@ async function startEmulator() {
       out.end();
       if (children.get("emulator") === child) children.delete("emulator");
       if (quitting || stoppingEmulator) return;
+      const startAgain = () => setTimeout(() => !quitting && !stoppingEmulator && startEmulator(), 2000);
+      if (expectedExit) {
+        // restartPhone ended it and has said why on the screen (or, planned, that the phone is restarting).
+        expectedExit = false;
+        return startAgain();
+      }
       // The phone crashed: say so rather than show "Starting" for ever. One that ran a while starts again (a cold
       // boot: the crash left no snapshot); one that cannot even start is left for the user to see.
       const again = Date.now() - started > 60_000;
+      if (!again && ownDesktop) {
+        ownDesktop = false;
+        console.error(`The emulator ended within a minute on its own desktop (exit code ${code}): starting it on this one`);
+        return startAgain();
+      }
       phoneError = {
         message: "The phone stopped unexpectedly.",
         hint: again ? "penrose is starting it again." : `It could not start (exit code ${code}). Quit penrose and open it again.`,
       };
       mainWindow?.webContents.send("phone:error", phoneError);
-      if (again) setTimeout(() => !quitting && !stoppingEmulator && startEmulator(), 2000);
+      if (again) startAgain();
     });
     children.set("emulator", child);
   }
@@ -547,10 +587,20 @@ function phoneReady() {
       phoneError = { message: event.message, hint: event.hint || "" };
       mainWindow?.webContents.send("phone:error", phoneError);
     }
-  }).then(() => {
+  }).then(async (last) => {
     phoneReadying = false;
     sendStep(null);
     setPhoneSetup(false);
+    // The phone never came up: its emulator runs, and adb does not have it as a device (still booting after seven
+    // minutes, or "offline": on 2026-11-26 an emulator started from its snapshot stayed offline for good, device-ready
+    // gave up, and the phone sat on "Starting" until someone ended the emulator by hand). Nobody may be there to do
+    // that: end it and start the phone again, a cold boot. Never a loop: restartPhone does it once in ten minutes,
+    // and the run that follows gives up sooner than that, so a second failure is left on the screen.
+    if (last?.event === "error" && !quitting && !stoppingEmulator && !(await phoneBooted()) && (await phoneProcesses()).length) {
+      console.error("The phone did not come up: ending its emulator and starting it again");
+      const result = await restartPhone();
+      if (!result.restarted) console.error(`The phone was not started again: ${result.reason}`);
+    }
   });
 }
 
@@ -628,6 +678,7 @@ function stopEmulator() {
 const PHONE_RESTART_GAP_MS = 10 * 60 * 1000; // never a loop: a phone that freezes again this soon is left for the user
 let phoneRestart = null; // the restart in flight
 let lastPhoneRestart = 0;
+let lastPlannedRestart = 0;
 
 /** The emulator processes running this phone (qemu, started with `-port <this phone's>`), whoever started them:
  *  this launch, an earlier one that crashed, or development's phone that outlives the app. */
@@ -659,26 +710,45 @@ function endProcess(pid) {
   });
 }
 
-/** The gateway found the phone frozen: end its emulator and start it again. Answers what was done. */
-function restartFrozenPhone() {
+/** End the phone's emulator and start it again: a cold boot, with everything written to the phone kept. Two
+ *  callers, both the gateway (backend/app/gateway):
+ *  - the phone froze, lost Android for good or went offline on adb (watch.py): no more than once in ten minutes;
+ *  - `planned`: the emulator holds too many of the OpenGL driver's hidden windows (budget.py), which only a new
+ *    emulator process gives back. The gateway picks the moment (nobody uses the phone, or between two steps of a
+ *    task) and has flushed the phone's files first. Its own ten minutes, so that a planned restart never uses up
+ *    the one a freeze needs.
+ *  Not through the quick-boot snapshot: stopped that way on 2026-11-26 the phone came back offline on adb for good.
+ *  Answers what was done. */
+function restartPhone({ planned = false } = {}) {
   if (quitting || stoppingEmulator) return Promise.resolve({ restarted: false, reason: "penrose is stopping the phone itself" });
   if (phoneRestart) return phoneRestart;
-  if (Date.now() - lastPhoneRestart < PHONE_RESTART_GAP_MS) {
-    phoneError = {
-      message: "The phone keeps freezing.",
-      hint: "Quit penrose and open it again. If it goes on, restart this computer: it may be out of memory.",
-    };
-    mainWindow?.webContents.send("phone:error", phoneError);
+  if (planned && phoneReadying) return Promise.resolve({ restarted: false, reason: "the phone is being brought up to date" });
+  if (Date.now() - (planned ? lastPlannedRestart : lastPhoneRestart) < PHONE_RESTART_GAP_MS) {
+    if (!planned) {
+      phoneError = {
+        message: "The phone keeps freezing.",
+        hint: "Quit penrose and open it again. If it goes on, restart this computer: it may be out of memory.",
+      };
+      mainWindow?.webContents.send("phone:error", phoneError);
+    }
     return Promise.resolve({ restarted: false, reason: "it was restarted less than ten minutes ago" });
   }
   phoneRestart = (async () => {
     const pids = await phoneProcesses();
     if (!pids.length) return { restarted: false, reason: "no emulator process runs this phone" };
-    lastPhoneRestart = Date.now();
-    console.error(`The phone stopped responding: ending its emulator (${pids.join(", ")}) and starting it again`);
-    phoneError = { message: "The phone stopped responding.", hint: "penrose is restarting it." };
-    mainWindow?.webContents.send("phone:error", phoneError);
+    if (planned) {
+      lastPlannedRestart = Date.now();
+      console.error(`Restarting the phone to give its emulator a fresh start (${pids.join(", ")})`);
+      phoneStep = "Restarting your phone";
+      mainWindow?.webContents.send("phone:step", phoneStep);
+    } else {
+      lastPhoneRestart = Date.now();
+      console.error(`The phone stopped responding: ending its emulator (${pids.join(", ")}) and starting it again`);
+      phoneError = { message: "The phone stopped responding.", hint: "penrose is restarting it." };
+      mainWindow?.webContents.send("phone:error", phoneError);
+    }
     const child = children.get("emulator");
+    expectedExit = Boolean(child); // it may exit by itself as soon as its emulator is gone
     for (const pid of pids) await endProcess(pid);
     if (child) {
       child.kill(); // its exit starts the phone again (startEmulator's exit handler)
@@ -812,7 +882,7 @@ function writeLauncher() {
 
 function startServiceSet() {
   const { apiPort, gatewayPort, env } = services;
-  // The gateway's way back to this app is for one thing: a phone that froze (restartFrozenPhone).
+  // The gateway's way back to this app is for one thing: restarting the phone's emulator (restartPhone).
   startService("gateway", ["gateway", "--port", String(gatewayPort)], () => ({
     ...env,
     PHONE_SETUP: phoneSetup ? "1" : "0",
@@ -834,11 +904,12 @@ function apiEnv() {
 
 /** The services' way back to this app: loopback, with a per-launch token only the API is given. The keys are
  *  encrypted with the OS keychain, which only this process can open, so a key saved from a linked phone
- *  (backend/app/api/keys.py) is handed over here. The gateway has a token of its own that opens one route:
- *  restart a phone that froze (restartFrozenPhone). */
+ *  (backend/app/api/keys.py) is handed over here. The gateway has a token of its own that opens the two routes
+ *  about the phone's emulator, which this app owns, both restartPhone: a phone that froze, lost Android or
+ *  went offline, and an emulator that holds too many hidden windows (a planned restart). */
 function startControl() {
   const token = crypto.randomBytes(24).toString("hex");
-  const phoneToken = crypto.randomBytes(24).toString("hex"); // the gateway's: it opens /phone/restart and nothing else
+  const phoneToken = crypto.randomBytes(24).toString("hex"); // the gateway's: it opens /phone/restart and /phone/renew, nothing else
   const server = http.createServer((request, response) => {
     const reply = (status, body) => {
       response.writeHead(status, { "Content-Type": "application/json" });
@@ -852,7 +923,15 @@ function startControl() {
     if (request.method === "POST" && request.url === "/phone/restart") {
       if (!allowed(phoneToken)) return reply(401, { error: "Not allowed." });
       request.resume();
-      return restartFrozenPhone().then(
+      return restartPhone().then(
+        (result) => reply(200, result),
+        (error) => reply(500, { restarted: false, reason: String(error?.message || error) }),
+      );
+    }
+    if (request.method === "POST" && request.url === "/phone/renew") {
+      if (!allowed(phoneToken)) return reply(401, { error: "Not allowed." });
+      request.resume();
+      return restartPhone({ planned: true }).then(
         (result) => reply(200, result),
         (error) => reply(500, { restarted: false, reason: String(error?.message || error) }),
       );

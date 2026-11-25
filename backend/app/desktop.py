@@ -4,6 +4,7 @@
     relay-server gateway --port 8002    the device gateway (adb, the bridge, the live view)
     relay-server worker                 the run executor
     relay-server provision ...          first-run Android setup (app/provision)
+    relay-server emulator -- ...        the phone's emulator, on a desktop of its own (app/phone_desktop.py)
     relay-server phone|doctor|setup ... the `relay` command for Claude Code and Cowork (app/cli.py); the app
                                         installs a `relay` launcher that runs this program
 
@@ -63,6 +64,13 @@ CLI_COMMANDS = ("phone", "doctor", "setup", "mcp", "run", "reply", "cancel", "-h
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else list(argv)
+    if argv[:1] == ["emulator"]:
+        # The phone's emulator, started on a desktop of its own (Windows). Before anything else is imported: this
+        # process stays for as long as the phone runs, and does not end with the app (a phone that outlives a
+        # crashed app is taken over by the next launch).
+        from .phone_desktop import main as emulator
+
+        return emulator(argv[1:])
     if not argv or argv[0] in CLI_COMMANDS:
         from .cli import main as cli
 

@@ -88,12 +88,20 @@ class Settings(BaseSettings):
     # a key saved from a linked phone, because only the app can open the OS keychain the keys are kept in.
     desktop_control_url: str = ""
     desktop_control_token: str = ""
-    # The gateway's own token for that server, good for one thing: asking the app to restart a phone that has
-    # stopped answering (gateway/watch.py). The app owns the emulator: it stops the frozen one and starts it again.
+    # The gateway's own token for that server, good for the phone's emulator only, which the app owns: asking it
+    # to restart a phone that stopped answering, lost Android or went offline (gateway/watch.py), and to restart
+    # one whose emulator holds too many hidden windows (gateway/budget.py).
     desktop_phone_token: str = ""
     # The gateway asks each phone whether it still answers this often (gateway/watch.py): a frozen emulator says
     # nothing by itself. 0: it is never asked.
     phone_alive_seconds: float = Field(default=60, ge=0)
+    # The emulator's hidden windows (Windows; gateway/budget.py): past the first count the phone is restarted (a
+    # cold boot, about half a minute) as soon as nobody uses it, past the second between two requests of whatever
+    # holds it. 350 is a driver pool of 256 in use: the doublings still to come before the second count cost under
+    # 3 s and then 41 s of a phone that does not draw. 1,100 is a pool of 1,024: the doubling after that costs
+    # minutes, and Android with it, which is worse for a running task than losing its open app. 0: never read.
+    phone_windows_soft: int = Field(default=350, ge=0)
+    phone_windows_hard: int = Field(default=1100, ge=0)
     # Decodes the phone's H.264 screen recording into frames for the live view.
     ffmpeg_path: str = "ffmpeg"
     # The phone's adb serial (the desktop app runs its emulator on port 5570).
