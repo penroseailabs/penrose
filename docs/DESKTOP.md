@@ -287,6 +287,13 @@ workflow: `CSC_LINK` and
 `CSC_KEY_PASSWORD` (a Developer ID certificate as base64 .p12) with `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and
 `APPLE_TEAM_ID` for macOS; `WIN_CSC_LINK` and `WIN_CSC_KEY_PASSWORD` for Windows.
 
+**The usage count.** An installed copy (never a development run) posts `{id, version, os}` once per UTC day to
+`relayStatsUrl` in package.json: `id` is a random UUID made on first start (`installId` in config.json). Off when
+the user turns off Settings › Anonymous usage count (`usageCount: false`) or `DO_NOT_TRACK` is set. The receiver is
+`stats/`, a Cloudflare Worker with one SQLite Durable Object: it keeps the ID, version, OS and day, never the IP
+address, and trims days older than 400. `npm run deploy` there deploys it; `npm run report` prints installs and
+daily, 7-day and 30-day active copies (it needs the worker's `REPORT_TOKEN` secret in `stats/.report-token`).
+
 **The phone.** `backend/app/provision/manifest.py`: `assets/android/manifest.json` lists each phone-side artifact
 (`apk` with its package, or `magisk-module` with its module id) and `golden_generation`. The phone keeps a record
 of what was applied to it at `/data/adb/relay/applied.json` (the golden image gets one when it is built, so every

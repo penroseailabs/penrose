@@ -1,0 +1,17 @@
+# The usage count (src/index.ts). Deploy: `npm run deploy`; the report: `npm run report`.
+name = "penrose-stats"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "COUNTER"
+class_name = "Counter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Counter"]
+
+# Trims pings older than 400 days.
+[triggers]
+crons = ["17 3 * * *"]

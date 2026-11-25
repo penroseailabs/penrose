@@ -1,0 +1,16 @@
+{
+  "name": "penrose-stats",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Counts how many copies of penrose are in use: a random ID, the version and the OS, once a day.",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "report": "node report.mjs",
+    "check": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261027.1",
+    "typescript": "~5.8.3",
+    "wrangler": "^4.154.0"
+  }
+}

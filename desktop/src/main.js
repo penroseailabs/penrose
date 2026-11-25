@@ -5,6 +5,7 @@
 // Cowork), opened by a durable token the API keeps in the data dir (backend/app/api/phone.py).
 
 const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, nativeTheme, safeStorage, screen, session, shell } = require("electron");
+const electronNet = require("electron").net; // fetch through the system's proxy settings; node:net is `net` below
 const { spawn, execFile } = require("node:child_process");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
@@ -1326,6 +1327,46 @@ async function offerRestart(version) {
   autoUpdater.quitAndInstall(false, true);
 }
 
+// --- usage count --------------------------------------------------------------------------------------------
+// Once a day an installed copy tells the usage-count worker (stats/src/index.ts, `relayStatsUrl` in package.json)
+// that it ran: a random ID made on its first start (`installId` in config.json), the version and the OS. Nothing
+// else, and nothing at all when the user turns it off in Settings (`usageCount: false`), DO_NOT_TRACK is set, or
+// this is a development run. The worker keeps no IP address. Checked hourly, sent once per UTC day.
+
+const { relayStatsUrl: STATS_URL = "" } = require("../package.json");
+const DO_NOT_TRACK = /^(1|true|yes)$/i.test(process.env.DO_NOT_TRACK || "");
+
+const usageCountOn = () => readConfig().usageCount !== false;
+
+function sendUsagePing() {
+  if (DEV || DO_NOT_TRACK || !/^https:\/\//.test(STATS_URL) || !usageCountOn()) return;
+  const today = new Date().toISOString().slice(0, 10);
+  let config = readConfig();
+  if (config.usagePingDay === today) return;
+  if (!config.installId) {
+    config = { ...config, installId: crypto.randomUUID() };
+    writeConfig(config);
+  }
+  const body = JSON.stringify({ id: config.installId, version: app.getVersion(), os: process.platform });
+  electronNet
+    .fetch(STATS_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body })
+    .then((response) => response.ok && writeConfig({ ...readConfig(), usagePingDay: today }))
+    .catch(() => {}); // offline: the next hourly check tries again
+}
+
+function setupUsageCount() {
+  if (DEV) return;
+  setTimeout(sendUsagePing, 60_000);
+  setInterval(sendUsagePing, 60 * 60 * 1000);
+}
+
+ipcMain.handle("usage:get", () => !DO_NOT_TRACK && usageCountOn());
+ipcMain.handle("usage:set", (_event, on) => {
+  if (typeof on !== "boolean") return;
+  writeConfig({ ...readConfig(), usageCount: on });
+  if (on) sendUsagePing();
+});
+
 function showAbout() {
   dialog.showMessageBox(mainWindow, {
     type: "info", buttons: ["OK"], noLink: true, message: `penrose ${app.getVersion()}`, detail: `Build ${BUILD_ID}`,
@@ -1627,6 +1668,7 @@ if (!app.requestSingleInstanceLock()) {
     setupAutostart();
     setupTray();
     setupUpdates();
+    setupUsageCount();
     launch();
   });
   app.on("window-all-closed", () => app.quit());

@@ -67,6 +67,9 @@ interface Window {
     openLogs?: () => void;
     /** Shows the exported Cowork skill (android-phone.zip) in the file manager; false when it is not there. */
     revealClaudeSkill?: () => Promise<boolean>;
+    /** Whether the anonymous usage count is on (a random ID, the version and the OS, once a day). */
+    usageCount?: () => Promise<boolean>;
+    setUsageCount?: (on: boolean) => Promise<void>;
     /** The OS's location settings (Windows, macOS), for when location is off for Relay. */
     openLocationSettings?: () => void;
     resetPhone?: () => Promise<boolean>;

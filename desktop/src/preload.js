@@ -31,6 +31,9 @@ contextBridge.exposeInMainWorld("relay", {
   menu: (items) => ipcRenderer.invoke("menu:popup", items),
   openLogs: () => ipcRenderer.invoke("open:logs"),
   revealClaudeSkill: () => ipcRenderer.invoke("reveal:claude-skill"),
+  // the anonymous usage count (main.js): on unless the user turned it off
+  usageCount: () => ipcRenderer.invoke("usage:get"),
+  setUsageCount: (on) => ipcRenderer.invoke("usage:set", Boolean(on)),
   // Relay on your phone: deploying the coordinator to the user's Cloudflare account
   companionSetup: () => ipcRenderer.invoke("companion:setup"),
   companionState: () => ipcRenderer.invoke("companion:state"),

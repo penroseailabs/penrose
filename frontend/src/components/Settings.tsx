@@ -144,6 +144,28 @@ function BriefingApps({ ws }: { ws: Workspace }) {
   );
 }
 
+/** The anonymous usage count (desktop/src/main.js): shown in the desktop app only, where the count is sent from. */
+function UsageCountRow() {
+  const desktop = window.relay;
+  const [on, setOn] = useState<boolean | null>(null);
+  useEffect(() => {
+    desktop?.usageCount?.().then(setOn, () => setOn(null));
+  }, [desktop]);
+  if (!desktop?.usageCount || on === null) return null;
+  const change = (next: boolean) => {
+    setOn(next);
+    desktop.setUsageCount?.(next);
+  };
+  return (
+    <Row
+      title="Anonymous usage count"
+      detail="Once a day, a random ID, the version and the system, so penrose’s makers know how many people use it. Nothing else"
+    >
+      <Switch on={on} onChange={change} label="Anonymous usage count" />
+    </Row>
+  );
+}
+
 function locationDetail(where: Workspace["where"]) {
   // The desktop window asks its OS; a browser tab, the browser (which asks the OS of whatever device it is on).
   const platform = window.relay?.platform;
@@ -227,6 +249,7 @@ export default function Settings({ ws, theme, onTheme, devMode, onDevMode, onMem
         </div>
       )}
       <div className="set-group">
+        <UsageCountRow />
         <Row title="Developer mode" detail="Shows penrose’s internal plan and trace">
           <Switch on={devMode} onChange={onDevMode} label="Developer mode" />
         </Row>

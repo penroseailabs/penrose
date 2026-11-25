@@ -191,6 +191,10 @@ Passwords are filled by the phone’s own password manager and reach the agent a
 from you straight to the phone and never touch a model, the chat or the logs. The phone refuses to delete your
 email whatever the agent asks, and banking, wallet, brokerage and crypto apps stay shut.
 
+To count how many people use it, penrose sends one anonymous ping a day: a random ID, its version and your
+operating system. No IP address is kept, and nothing about you, your phone or your chats is sent. Turn it off
+under **Settings › Anonymous usage count**, or set `DO_NOT_TRACK=1`.
+
 <br>
 
 ## Phones were made for thumbs.<br>This one was made for agents.

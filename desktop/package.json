@@ -12,6 +12,7 @@
     "type": "git",
     "url": "https://github.com/penroseailabs/penrose.git"
   },
+  "relayStatsUrl": "https://penrose-stats.relay-a1337fb2.workers.dev/ping",
   "scripts": {
     "start": "electron .",
     "dev": "node scripts/dev.js",
