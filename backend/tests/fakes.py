@@ -188,6 +188,8 @@ class FakeDevices:
         self.fix = None  # {"lat", "lng", "accuracy"} once the phone was given a location
         self.refreshed = 0
         self.zones = []  # (slot, zone) each time the phone's clock was put on a time zone
+        self.rescoped = []  # each app the bridge's scope was brought up to date for (it ran without the bridge)
+        self.scoped = True  # what that says: the app is in the scope (None: the gateway could not say)
         self.found = {}  # the home app's search: query -> its result lines
         self.search_error = None  # a DeviceError the home app's search raises instead
         self.searches = []
@@ -300,6 +302,10 @@ class FakeDevices:
     async def set_timezone(self, slot, zone):
         self.zones.append((slot, zone))
         return True
+
+    async def bridge_scope(self, slot, package):
+        self.rescoped.append(package)
+        return self.scoped
 
     async def release(self, owner):
         self.released.append(owner)

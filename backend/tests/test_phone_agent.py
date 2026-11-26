@@ -503,6 +503,7 @@ async def test_an_app_running_without_the_bridge_is_restarted_and_read(store, qu
     end, s = await run(store, lambda text: phone(report()), devices=Restarting(hooks_after=1))
     first = s.calls[0]["context"]
     assert s.devices.op_log == [{"op": "stop", "package": "com.target.ui"}, {"op": "launch", "package": "com.target.ui"}]
+    assert s.devices.rescoped == ["com.target.ui"]  # put in the bridge's scope before the restart
     assert "com.target.ui was running without the bridge" in section(first, "Notices")
     assert "can be read now" in section(first, "Notices")
     assert 'Field "Mobile Number"' in section(first, "Screen") or "Mobile Number" in section(first, "Screen")
@@ -515,6 +516,14 @@ async def test_an_app_is_restarted_once_then_the_agent_is_told_it_cannot_be_read
     assert "the bridge still did not load" in section(s.calls[0]["context"], "Notices")
     assert "still runs without the bridge" in section(s.calls[1]["context"], "Notices")
     assert s.calls[0]["images"] == [] and s.calls[1]["images"] == []
+    assert s.devices.rescoped == ["com.target.ui"]  # once, like the restart
+
+
+async def test_an_app_the_scope_pass_cannot_add_says_so(store, quick_rehook):
+    devices = Restarting(hooks_after=None)
+    devices.scoped = False
+    end, s = await run(store, then_report(phone({"tool": "press_key", "key": "back"})), devices=devices)
+    assert "not in the bridge's scope" in section(s.calls[0]["context"], "Notices")
 
 
 async def test_a_phone_with_no_bridge_anywhere_ends_the_run(store, quick_rehook):

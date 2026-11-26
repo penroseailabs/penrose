@@ -1,6 +1,6 @@
 id=relay_autoscope
 name=Relay Autoscope
-version=v0.4.0
-versionCode=6
+version=v0.5.0
+versionCode=7
 author=relay
 description=At boot, puts every app with a launcher icon (preinstalled Google apps included), every user-installed app, and Google sign-in, permission dialogs, the launcher, the photo picker and the share sheet in the relay-bridge Xposed scope; apps installed later are added by Vector itself (include new apps).

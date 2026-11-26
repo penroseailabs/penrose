@@ -764,6 +764,9 @@ class PhoneAgent:
                                         "acted on. Do not guess at it: use another way, or report it as failed.")
                 continue
             restarted = True
+            # Most often the app is not in the bridge's scope (relay-autoscope's pass at boot missed it): put it
+            # there first, so that the restart loads the bridge.
+            scoped = await self.devices.bridge_scope(self.slot, package)
             await self.lane.run({"op": "stop", "package": package})
             await self.lane.run({"op": "launch", "package": package})
             deadline = time.monotonic() + REHOOK_WAIT
@@ -776,7 +779,8 @@ class PhoneAgent:
                     "Restart penrose to update the phone; if that doesn't fix it, reset the phone in Settings.")
             line = (f"runtime: {package} was running without the bridge, so its screen could not be read; it was "
                     "restarted" + (" and can be read now. It starts again from its first screen." if hooked
-                                   else ", but the bridge still did not load."))
+                                   else ", but the bridge still did not load"
+                                   + (" (the app is not in the bridge's scope)." if scoped is False else ".")))
             self.done(line)
             self.notices.append(line.removeprefix("runtime: "))
             self.runner.emit(self.state, "node_progress", {"node_id": self.node_id, "description": line[:300]})

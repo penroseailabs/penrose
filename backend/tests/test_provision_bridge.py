@@ -195,3 +195,25 @@ def test_a_reboot_is_waited_for_on_the_phone_across_the_restart(monkeypatch):
     monkeypatch.setattr(provision, "wait_boot", lambda serial, wait: conditions.append("booted"))
     assert provision.wait_reboot("emulator-5600", "1234") is True
     assert conditions[-1] == "booted" and len(conditions) == 3 and "!= 1234" in conditions[0]
+
+
+async def test_the_gateway_runs_the_scope_pass_for_an_app_without_the_bridge(monkeypatch):
+    """An app the boot pass missed (the phone booted locked) is put in the scope when it opens without the bridge."""
+    from app import gateway
+    from fastapi import HTTPException
+
+    calls = []
+
+    async def adb(slot, *args, **kwargs):
+        calls.append(args)
+        return b'[{"APP_PACKAGE": "com.android.chrome"}, {"APP_PACKAGE": "com.google.android.gm"}]'
+
+    monkeypatch.setattr(gateway.core, "slots", {"device-1": "emulator-5554"})
+    monkeypatch.setattr(gateway.core, "locks", {"device-1": gateway.core.asyncio.Lock()})
+    monkeypatch.setattr(gateway.core, "adb", adb)
+    assert await gateway.devices.bridge_scope("device-1", "com.google.android.gm") == {"scoped": True}
+    assert await gateway.devices.bridge_scope("device-1", "com.google.android.apps.maps") == {"scoped": False}
+    shell = calls[0][1]
+    assert shell.startswith("su -c '") and "relay_autoscope/service.sh once" in shell  # one pass, no wait for the unlock
+    with pytest.raises(HTTPException):  # it goes into a root command
+        await gateway.devices.bridge_scope("device-1", "x;reboot")

@@ -891,7 +891,7 @@ def include_new_apps(work: Path, serial=GOLDEN_SERIAL):
         shutil.rmtree(work, ignore_errors=True)
 
 
-AUTOSCOPE = "sh /data/adb/modules/relay_autoscope/service.sh"
+AUTOSCOPE = "sh /data/adb/modules/relay_autoscope/service.sh once"  # one pass, no wait for the unlock
 
 
 def rescope(serial):

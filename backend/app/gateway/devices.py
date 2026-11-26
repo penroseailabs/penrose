@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from ..android import TIME_ZONE, google_accounts
-from ..bridge.ops import OpError
+from ..bridge.ops import PACKAGE, OpError
 from ..config import settings
 from . import core, scope, signin, sleep, watch
 
@@ -288,6 +288,24 @@ async def set_timezone(slot: str, body: TimeZoneRequest):
     if output.strip().splitlines()[-1:] != [body.zone]:
         raise HTTPException(503, f"The phone did not take the time zone: {output[:200]}")
     return {"zone": body.zone}
+
+
+AUTOSCOPE = "sh /data/adb/modules/relay_autoscope/service.sh once"
+BRIDGE_SCOPE = "sh /data/adb/modules/zygisk_vector/cli --json scope ls app.relay.bridge"
+
+
+@router.post("/devices/{slot}/bridge-scope/{package}")
+async def bridge_scope(slot: str, package: str):
+    """An app opened without the bridge: run relay-autoscope's scope pass now (android/autoscope/service.sh), which
+    puts every app with a launcher icon and every user-installed app in the bridge's scope, then say whether
+    `package` is in it. Its pass at boot can miss apps (a phone that boots locked lists only the few apps that run
+    before the unlock), and it runs once per boot. The app loads the bridge from its next start. Needs root."""
+    core.require_slot(slot)
+    if not PACKAGE.fullmatch(package):
+        raise HTTPException(422, "package must be an Android package ID")
+    async with core.locks[slot]:
+        output = (await core.adb(slot, "shell", f"su -c '{AUTOSCOPE}; {BRIDGE_SCOPE}'", timeout=120)).decode(errors="replace")
+    return {"scoped": f'"{package}"' in output}
 
 
 def fix_view(slot):

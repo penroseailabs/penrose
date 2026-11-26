@@ -157,6 +157,15 @@ class Devices:
         except httpx.TransportError:
             return False
 
+    async def bridge_scope(self, slot, package):
+        """Put the apps the bridge should load in (`package` among them, when it has a launcher icon or the user
+        installed it) in its scope now: whether `package` is in it, None when the gateway could not say."""
+        try:
+            r = await self.client.post(f"/devices/{slot}/bridge-scope/{package}", timeout=130)
+            return r.json()["scoped"] if r.is_success else None
+        except (httpx.TransportError, ValueError, KeyError):
+            return None
+
     async def locations(self):
         """The fix of every phone, by slot; {} when the gateway cannot say."""
         try:
