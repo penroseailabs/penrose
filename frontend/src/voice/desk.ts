@@ -71,7 +71,7 @@ type Realtime = {
   delta?: string;
   transcript?: string;
   item_id?: string;
-  item?: { id?: string; type?: string; name?: string; call_id?: string; arguments?: string };
+  item?: { id?: string; type?: string; name?: string; call_id?: string; arguments?: string; status?: string };
   error?: { message?: string; code?: string; event_id?: string };
   response?: { status?: string };
   event_id?: string;
@@ -1175,7 +1175,13 @@ export class Desk extends EventTarget {
         break;
       }
       case "response.output_item.done":
-        if (event.item?.type === "function_call") {
+        if (event.item?.type === "function_call" && event.item.status === "incomplete") {
+          // A reply cut off while it was writing a call (news came in, the user spoke): its arguments are half
+          // written, so the call never runs. It goes out of the conversation, and the words it was answering are
+          // answered again by the next reply.
+          this.remove(event.item.id || "");
+          if (this.forUser) this.wants.add("user");
+        } else if (event.item?.type === "function_call") {
           this.called = true;
           void this.call(event.item, this.forUser);
         }

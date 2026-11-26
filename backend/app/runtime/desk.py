@@ -70,12 +70,16 @@ def _arg(session, description, *props):
 
 SESSION = "the session's id from the board or an event, like s:ab12cd"
 TOOLS = [
-    {"type": "function", "name": "start_errand", "description": "Start a session for a new errand.",
+    {"type": "function", "name": "start_errand",
+     "description": "Start a session for anything the user wants done, found out or answered that no session in the "
+                    "state is about.",
      "parameters": _arg(False, "", ("request", "what the user asked for, in their words"))},
     {"type": "function", "name": "pass_on",
-     "description": "Pass the user's words on to a session: an answer to its question, a correction, a follow-up, more of "
-                    "the same errand, or anything they want done or shown (a screenshot, a page read out). A working "
-                    "session is steered by them; a stopped or finished one goes on with them.",
+     "description": "Pass the user's words on to a session: an answer to its question, a correction, a follow-up, "
+                    "something they tell you about it or where to find something, or anything they want done, "
+                    "checked, used or shown. A working session is steered by them; a "
+                    "stopped or finished one goes on with them. Everything the user says for an errand goes here: "
+                    "you keep nothing yourself.",
      "parameters": _arg(True, SESSION, ("message", "the user's words, as they said them"))},
     {"type": "function", "name": "stop_errand", "description": "Stop a working session.", "parameters": _arg(True, SESSION)},
     {"type": "function", "name": "resume_errand", "description": "Continue a stopped session where it left off.",

@@ -322,6 +322,24 @@ console.log("\n6. A reply with nothing in it lets the screen go back to listenin
   desk.stop();
 }
 
+// --- 6b. a call cut off half-written --------------------------------------------------------------
+console.log("\n6b. A tool call cut off while being written never runs, and the user's words are answered again");
+{
+  const desk = await open();
+  relay.state = { text: "[penrose now] s:aaaaaa finished", about: "", due: [] };
+  await userSays("Check Reddit as well.");
+  const asked = sent("response.create").length;
+  socket.say({ type: "response.created" });
+  socket.say({ type: "response.output_item.done", item: { type: "function_call", id: "fc_half", status: "incomplete", name: "pass_on",
+    call_id: "call_half", arguments: '{"session":"s:aaaaaa","message":"Check Red' } });
+  socket.say({ type: "response.done", response: { status: "cancelled" } });
+  await wait(60);
+  check("the half-written call is not run", !relay.calls.some((c) => c.url === "/voice/desk/tool"));
+  check("it leaves the conversation", sent("conversation.item.delete").some((m) => m.item_id === "fc_half"));
+  check("a new reply to the user's words is asked for", sent("response.create").length === asked + 1);
+  desk.stop();
+}
+
 // --- 7. the conversation stays short -------------------------------------------------------------------------------
 console.log("\n7. Only the last lines said stay in the conversation");
 {
