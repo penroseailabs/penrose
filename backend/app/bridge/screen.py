@@ -28,6 +28,8 @@ WEB_ROLES = {  # ARIA role (explicit or implied by the tag) of a DOM element rea
 }
 TAP_FLAGS = {"listener", "click", "checkable"}
 SCROLL_FLAGS = {"can_scroll_down": "down", "can_scroll_up": "up", "can_scroll_right": "right", "can_scroll_left": "left"}
+SCROLL_ENDS = {"can_scroll_up": "top", "can_scroll_down": "bottom", "can_scroll_left": "left end", "can_scroll_right": "right end"}
+SCROLL_BEYOND = {"can_scroll_up": "above", "can_scroll_down": "below", "can_scroll_left": "to the left", "can_scroll_right": "to the right"}
 SHOWN_FLAGS = ["checked", "selected", "focused", "disabled", "password", "spinner",
                "covered", "required", "readonly", "invalid", "loading", "modal", "blocked_frame", "picker"]
 MAX_SCREEN_CHARS = 14000
@@ -1133,6 +1135,11 @@ def changes(before: Screen, after: Screen, target=None):
             for flag in ("checked", "selected", "focused", "disabled"):
                 if (flag in target.flags) != (flag in same.flags):
                     notes.append(("now " if flag in same.flags else "no longer ") + flag)
+            # A list or page that could scroll a way and now cannot has reached that end (the app's own
+            # canScrollVertically, or the page's scroll offset): said outright, so no scroll is spent finding out.
+            for flag, end in SCROLL_ENDS.items():
+                if flag in target.flags and flag not in same.flags:
+                    notes.append(f"now at the {end}: nothing more {SCROLL_BEYOND[flag]}")
     if moved := selection_moved(before, after, target):
         notes.append(moved)
     old, new = set(body(before.text)), set(body(after.text))

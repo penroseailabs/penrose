@@ -46,7 +46,7 @@ import de.robv.android.xposed.XposedBridge;
  * thread and hop to it only for the call itself, so the page's answer never blocks the UI.
  */
 final class Web {
-    static final String SCRIPT_VERSION = "9";
+    static final String SCRIPT_VERSION = "11";
     private static final long EVAL_MS = 2500;
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
 

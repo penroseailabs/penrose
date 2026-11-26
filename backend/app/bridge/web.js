@@ -6,7 +6,7 @@
 // The expression evaluates to the API object; installing twice on one page is a no-op.
 (function () {
   'use strict';
-  var VERSION = '7';
+  var VERSION = '11';
   var top = window;
   try { if (top.__relay && top.__relay.v === VERSION) return top.__relay; } catch (e) { /* fall through */ }
 
@@ -401,6 +401,7 @@
     this.view = [vb.x, vb.y, vb.x + vb.w, vb.y + vb.h];
     this.page = opts.scope === 'page';
     this.lim = this.page ? [-BIG, -BIG, BIG, BIG] : this.view;
+    this.absClip = [-BIG, -BIG, BIG, BIG];  // the clip absolutely positioned elements take (see visit)
     this.count = 0;
     this.max = opts.max || (this.page ? 2500 : 900);
     this.deadline = Date.now() + 1800;
@@ -507,20 +508,31 @@
     }
   }
 
+  // An element is clipped by the overflow of the ancestors it is laid out in, as the browser does it: an
+  // absolutely positioned one only by those from its containing block (the nearest positioned ancestor) up,
+  // a fixed one by the viewport. C.absClip is the clip at that containing block. A framework's popup lives
+  // in a zero-size overflow:hidden host (UI5's #sap-ui-static, many portals) that clips nothing on screen.
   function visit(el, C, d, clip, S, out) {
-    if (!clip) return;
+    var outerAbs = C.absClip;
+    try { visitEl(el, C, d, clip, S, out); } finally { C.absClip = outerAbs; }
+  }
+
+  function visitEl(el, C, d, clip, S, out) {
+    if (!clip && !C.absClip) return;
     var tag = el.localName;
     if (SKIP[tag]) return;
     if (el.inert) return;  // the browser lets no one reach it: nothing to read or act on
     var cs = d.win.getComputedStyle(el);
     var disp = cs.display;
     if (disp === 'none') return;
-    if (disp === 'contents') { walkNodes(childNodesOf(el), C, d, clip, S, out); return; }
+    var pos = cs.position;
+    var myClip = pos === 'fixed' ? C.view : pos === 'absolute' ? C.absClip : clip;
+    if (!myClip) return;
+    if (disp === 'contents') { walkNodes(childNodesOf(el), C, d, myClip, S, out); return; }
     if (parseFloat(cs.opacity) < 0.01) return;
     var rect = el.getBoundingClientRect();
     var abs = [rect.left + d.ox, rect.top + d.oy, rect.right + d.ox, rect.bottom + d.oy];
     var sized = rect.width > 0 && rect.height > 0;
-    var myClip = cs.position === 'fixed' ? C.view : clip;
     var eff = inter(myClip, C.lim);
     if (sized && (!eff || !inter(abs, eff))) return;  // outside what the user can see
     var shown = cs.visibility === 'visible';
@@ -528,6 +540,8 @@
     if (tag !== 'html' && tag !== 'body' && (cs.overflowX !== 'visible' || cs.overflowY !== 'visible')) {
       childClip = inter(myClip, abs);
     }
+    // This element is the containing block of absolutely positioned descendants: they take its clip.
+    if (pos !== 'static' || cs.transform !== 'none') C.absClip = childClip;
     var vis = sized && eff ? inter(abs, eff) : null;
     var inLabel = !!S.label;
 
@@ -704,7 +718,8 @@
     if (doc && doc.documentElement && doc.defaultView) {
       var d2 = { win: doc.defaultView, doc: doc, ox: abs[0] + el.clientLeft, oy: abs[1] + el.clientTop };
       var S2 = newRun(), kids = [];
-      walkNodes([doc.body || doc.documentElement], C, d2, inter(clip, abs), S2, kids);
+      C.absClip = inter(clip, abs);  // nothing in the frame is drawn outside it (visit restores the outer one)
+      walkNodes([doc.body || doc.documentElement], C, d2, C.absClip, S2, kids);
       flush(S2, C, d2, kids);
       if (kids.length) {
         var n = { cls: 'web:frame', wrole: 'frame', b: round(vis || abs), c: kids };

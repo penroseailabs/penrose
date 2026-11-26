@@ -54,7 +54,7 @@ import httpx
 import websockets
 
 WEB_JS = Path(__file__).resolve().parent / "web.js"
-SCRIPT_VERSION = "9"  # Web.SCRIPT_VERSION: both install window.__relay under this version
+SCRIPT_VERSION = "11"  # Web.SCRIPT_VERSION: both install window.__relay under this version
 CONSENT_JS = Path(__file__).resolve().parent / "autoconsent.js"  # a build of @duckduckgo/autoconsent, see NOTICE
 REJECT_COOKIE_BANNERS = True
 FRAME_DEPTH = 4  # frames inside frames that are read: a frame of the page, a frame inside that one, and so on

@@ -65,6 +65,9 @@ Your brief comes first. Then:
   readable" is one the bridge cannot read (the notification shade, the keyboard).
 - A "Web page=... url=..." line is a web page inside the app; its elements follow in the same format. Role
   is the web role, href is where a link goes, and a Select lists its choices, picked with choose.
+  A dropdown that opens a list of Options (in a popup or dialog) is picked by tapping the Option. For a
+  long list, type first: a field that takes text (a combobox, a search box in or above the list) narrows it
+  to what you type, so the choice comes up without scrolling. Scroll the list only when nothing takes text.
   {covered} means a popup, cookie banner or modal is on top of the element: deal with that first.
   "(frame ...: cross-origin, its content is not readable)" is content you cannot see: do not guess at it.
 - `blocked="..."` on an element, or "the phone refused ..." in the last result, is an action the phone
