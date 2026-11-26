@@ -232,7 +232,9 @@ class Orchestrator:
             **({"new_notifications": state["notifications"]} if state.get("notifications") else {}),
             "latest": self.latest,
             "phone_location": await self.runner.phone_location(state),
-            "phone_time": {"used_minutes": round(used, 1), "budget_minutes": settings.task_phone_minutes},
+            "phone_time": {"used_minutes": round(used, 1),
+                           "left_minutes": round(max(0, settings.task_phone_minutes - used), 1),
+                           "budget_minutes": settings.task_phone_minutes},
             "must_conclude": must_conclude,
             **clock,
         })

@@ -576,6 +576,7 @@ async def test_a_task_that_used_its_phone_time_must_conclude_until_the_user_writ
             return orch(set_plan(step_spec("s1", "Look", kind="question"), step_spec("s2", "Look more", kind="question")), run_step("s1"))
         if n == 1:
             assert context["must_conclude"] is True and context["phone_time"]["budget_minutes"] == 1e-9
+            assert context["phone_time"]["left_minutes"] == 0  # never below zero once the budget is used up
             return orch(run_step("s2"))  # rejected: the task must conclude
         if n == 2:
             return orch(ask_user("Shall I go on?"))

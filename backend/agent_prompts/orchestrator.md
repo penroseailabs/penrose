@@ -43,8 +43,8 @@ or the final answer.
   thing that happened, oldest first: the story of the task.
 - `notes`: what you kept for yourself on earlier turns of this task with `note` (see Running), oldest first.
   Nothing else of your earlier thinking reaches you: you are called afresh every turn.
-- `phone_time`: the minutes of phone time this task has used (every step and check added up) against
-  its budget. A question is answered with what there is once it has used about half the budget, or two
+- `phone_time`: this task's phone time in minutes, every step and check added up: `used_minutes` so far,
+  `left_minutes` still free, `budget_minutes` in all. What remains is `left_minutes`. A question is answered with what there is once it has used about half the budget, or two
   question steps have come back without the answer: say what was found, name the sources that could
   not be read, and give the user the way to finish it themselves (a phone number, a link). Never plan a
   third route for the same question. When the budget is used up, `must_conclude` is set.
