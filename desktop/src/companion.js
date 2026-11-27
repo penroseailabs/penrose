@@ -2,7 +2,7 @@
 // deployed to the user's own Cloudflare account, so nobody but the user runs anything. The user signs in to
 // Cloudflare once in their browser (wrangler's OAuth flow, with the token kept in Relay's data dir); then
 // wrangler, bundled with the app, deploys the Worker and the API is told the resulting workers.dev address
-// (backend/app/companion). An app update with a newer companion deploys again by itself.
+// (backend/app/companion). An update with a newer companion deploys again by itself.
 
 const { shell } = require("electron");
 const { spawn } = require("node:child_process");
@@ -15,16 +15,13 @@ const SCOPES = ["account:read", "user:read", "workers:write", "workers_scripts:w
 const API = "https://api.cloudflare.com/client/v4";
 const LOGIN_MINUTES = 10;
 
-module.exports = function companion({ DATA, DEV, ROOT, BUILD_ID, resource, log }) {
+module.exports = function companion({ DATA, DEV, source, assets, modules, version, log }) {
   const home = path.join(DATA, "coordinator"); // wrangler's project dir: its config and its scratch files
   const cloudflare = path.join(DATA, "cloudflare"); // XDG_CONFIG_HOME: the OAuth token lives in .wrangler/config
   const tokenFile = path.join(cloudflare, ".wrangler", "config", "default.toml");
-  const deployedFile = path.join(home, "deployed"); // the build id of the last deploy and its address
+  const deployedFile = path.join(home, "deployed"); // what was last deployed (version()) and its address
 
-  /** The coordinator's source and the built companion app: the repo in development, bundled otherwise. */
-  const source = () => (DEV ? path.join(ROOT, "coordinator") : resource("coordinator"));
-  const assets = () => (DEV ? path.join(ROOT, "frontend", "dist-companion") : resource("companion"));
-  const wrangler = () => path.join(source(), "node_modules", "wrangler", "wrangler-dist", "cli.js");
+  const wrangler = () => path.join(modules(), "wrangler", "wrangler-dist", "cli.js");
 
   let run = null; // the setup under way: { step, log: [] }
   let onEvent = () => {};
@@ -196,7 +193,7 @@ module.exports = function companion({ DATA, DEV, ROOT, BUILD_ID, resource, log }
         await deploy(account);
         const origin = `https://${WORKER}.${sub}.workers.dev`;
         await waitForAddress(origin);
-        fs.writeFileSync(deployedFile, JSON.stringify({ build: BUILD_ID, origin, account, at: Date.now() }));
+        fs.writeFileSync(deployedFile, JSON.stringify({ version: version(), origin, account, at: Date.now() }));
         onEvent({ event: "done", origin });
         return { ok: true, origin };
       } catch (error) {
@@ -211,12 +208,29 @@ module.exports = function companion({ DATA, DEV, ROOT, BUILD_ID, resource, log }
     return run.promise;
   }
 
-  /** An update shipped a newer companion: deploy it again, quietly, with the sign-in already kept. */
+  /** An update shipped a newer companion: deploy it again, quietly, with the sign-in already kept. Never signs
+   *  in (that opens the browser, which only the user's own click may do): wrangler renews the kept sign-in itself,
+   *  and where it cannot, the next start tries again. */
   async function refresh() {
     const last = deployed();
-    if (!last || last.build === BUILD_ID || BUILD_ID === "dev" || !token()) return;
-    const result = await setup();
-    if (!result.ok) log?.(`companion: could not redeploy after the update: ${result.error}`);
+    if (DEV || run || !last?.account || last.version === version() || !token()) return;
+    run = { step: "", promise: null };
+    run.promise = (async () => {
+      try {
+        await deploy(last.account);
+        fs.writeFileSync(deployedFile, JSON.stringify({ ...last, version: version(), at: Date.now() }));
+        onEvent({ event: "done", origin: last.origin });
+        return { ok: true, origin: last.origin };
+      } catch (error) {
+        const message = error.message || String(error);
+        log?.(`companion: could not redeploy after the update: ${message}`);
+        onEvent({ event: "error", message });
+        return { ok: false, error: message };
+      } finally {
+        run = null;
+      }
+    })();
+    await run.promise;
   }
 
   return {

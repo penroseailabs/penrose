@@ -49,7 +49,7 @@ Nobody runs a server for anyone else. The title bar's phone button (or Settings,
 companion up with one click: the desktop app opens a Cloudflare sign-in in the browser (a free account), registers
 a `workers.dev` address if the account has none, and deploys the bundled coordinator and companion app to that
 account with wrangler, which ships inside penrose (`desktop/src/companion.js`). The address is kept by the API in
-`<data dir>/companion/origin` and the QR code appears as soon as the computer is connected. An app update with a
+`<data dir>/companion/origin` and the QR code appears as soon as the computer is connected. An update with a
 newer companion deploys again by itself; the sign-in token stays in `<data dir>/cloudflare`.
 
 In development the same button works from `npm run dev` (it needs `npm run build:companion` in `frontend/` and

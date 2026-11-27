@@ -1,0 +1,2 @@
+# Shipped to the phone and compared by hash (backend/app/provision/manifest.py): the same bytes from every checkout.
+desktop/assets/android/*.sh text eol=lf

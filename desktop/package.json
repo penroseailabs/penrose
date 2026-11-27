@@ -21,6 +21,7 @@
     "build:coordinator": "npm --prefix ../coordinator ci --omit=dev --no-audit --no-fund",
     "build:server": "node scripts/build-server.js",
     "fetch:vendor": "node scripts/fetch-vendor.js",
+    "content": "node scripts/content.js",
     "prepare:all": "npm run build:frontend && npm run build:coordinator && npm run build:server && npm run fetch:vendor",
     "dist": "npm run prepare:all && node scripts/dist.js",
     "dist:dir": "npm run prepare:all && node scripts/dist.js --dir",
@@ -60,12 +61,8 @@
         "to": "server"
       },
       {
-        "from": "../frontend/dist",
-        "to": "frontend"
-      },
-      {
-        "from": "assets/android",
-        "to": "android"
+        "from": "content",
+        "to": "content"
       },
       {
         "from": "build/icon-win.png",
@@ -76,21 +73,19 @@
         "to": "bin"
       },
       {
-        "from": "../coordinator",
-        "to": "coordinator",
+        "from": "../coordinator/node_modules",
+        "to": "coordinator/node_modules",
         "filter": [
-          "src/*.ts",
-          "wrangler.toml",
-          "node_modules/**/*",
-          "!node_modules/@cloudflare/workerd-*/**",
-          "!node_modules/workerd/**",
-          "!node_modules/typescript/**",
-          "!node_modules/@cloudflare/workers-types/**"
+          "**/*",
+          "!@cloudflare/workerd-*/**",
+          "!workerd/**",
+          "!typescript/**",
+          "!@cloudflare/workers-types/**"
         ]
       },
       {
-        "from": "../frontend/dist-companion",
-        "to": "companion"
+        "from": "stubs/workerd",
+        "to": "coordinator/node_modules/workerd"
       }
     ],
     "win": {

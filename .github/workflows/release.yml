@@ -1,7 +1,8 @@
 name: Release
 
 # Builds penrose for Windows, macOS and Linux under one build ID and publishes them as one GitHub release.
-# Installed copies update from that release (docs/DESKTOP.md, "Releases and updates").
+# Installed copies update from that release (docs/DESKTOP.md, "Releases and updates"): most take only the app's
+# content, which the Linux build uploads, and the rest install the new installer.
 #
 # A platform whose build did not finish (GitHub is at times out of Mac machines) is left out of the release, not
 # allowed to hold it back. Re-run that job from the run's page ("Re-run failed jobs") and it is added to the same
@@ -114,6 +115,16 @@ jobs:
           RELAY_PYTHON: ${{ steps.python.outputs.python-path }}
         run: npm run dist
 
+      # The update without an installer (desktop/scripts/content.js). The same for every platform: one copy.
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: penrose-content
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0
+          path: desktop/dist/content
+
       - uses: actions/upload-artifact@v4
         with:
           name: penrose-${{ matrix.name }}
@@ -151,6 +162,10 @@ jobs:
             done
           done
           ls latest*.yml > /dev/null 2>&1 || { echo "::error::nothing was built"; exit 1; }
+          if [ -f content-latest.json ]; then
+            name=$(jq -r .file content-latest.json)
+            [ -f "$name" ] || { echo "::error::content-latest.json names $name, which was not built"; exit 1; }
+          fi
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}

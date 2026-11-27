@@ -116,7 +116,8 @@ Electron main (desktop/src/main.js)
  └─ app window → http://127.0.0.1:<api port>  signed in by main with that launch's credentials
 ```
 
-- `relay-server` is `backend/app/desktop.py` bundled by PyInstaller (one folder, ~55 MB). In development
+- `relay-server` is Python and its libraries bundled by PyInstaller (one folder); it runs `backend/app/desktop.py`
+  from the content folder (below, "Releases and updates"). In development
   Electron runs `.venv`'s Python with `-m app.desktop` instead.
 - Everything listens on 127.0.0.1. The gateway token and the per-launch login keep other programs and web pages
   on the machine away from the phone and the API.
@@ -265,9 +266,12 @@ service restarts with a back-off from 1 s up to a minute.
 
 ## Releases and updates
 
-Everything in a build ships and updates together: the installer carries the services, the UI and the phone-side
-pieces, and the phone updates itself from them. The user only ever sees "Check for updates…" in the penrose menu
-(or the prompt after a background download) and "Restart now".
+A release reaches an installed copy in one of two ways, and the user does not choose between them. Most releases
+change only the **content**: `backend/app`, the agents' prompts and skills, the window's and the phone's web apps,
+the coordinator's source and the phone-side files. That is a download of a few megabytes, installed by restarting
+the services while the phone stays on. A release that changes anything else, the **shell** (the Electron app, the
+installer, Python and its libraries, wrangler, apkeep), is the whole installer. Either way the user sees "Check for
+updates…" in the penrose menu, or a prompt after the background download.
 
 **One build ID.** `desktop/scripts/release.js` stamps each build with the UTC time it started, `yyyymmddhhmmss`
 (`RELAY_BUILD_ID` pins it for a CI run stamping several platforms). `scripts/dist.js` passes it to
@@ -277,16 +281,36 @@ About, the updates log, and `--build-id` to the provisioner), together with the 
 and Windows keeps file versions in four 16-bit numbers; it sorts numerically in date order. The repository's
 package.json keeps a placeholder version. `npm run release:id` prints what a build started now would get.
 
-**The app.** electron-updater reads the `publish` target in package.json: this repository's GitHub releases
+**Content updates.** `desktop/scripts/content.js` stages the content into `desktop/content` (shipped as
+`resources/content`), and `scripts/dist.js` zips it into `dist/content` with its feed, `content-latest.json` (build,
+version, shell ID, size, SHA-512). The **shell ID** (`scripts/shell-id.js`) is a hash of the files only an installer
+can change: `desktop/src`, `desktop/build`, the build scripts, the two lock files, `backend/requirements.txt`,
+`backend/relay_server.py`, `backend/server_build.py` and the workflow's Python version. Nothing is bumped by hand.
+A new file that only an installer can deliver belongs in that list.
+
+The installed app (`src/content.js`) reads the feed from the latest release. A newer build with its own shell ID is
+downloaded to `<data>/updates/<build>`, checked against the size and SHA-512, and loaded once by
+`relay-server check-content`, which imports every module with the libraries this copy has. "Update now" restarts the
+services on it; "Later" leaves it for the next start. Its first starts are a trial: if a service does not stay up,
+or two starts end without an answer, penrose goes back to what worked, does not try that build again and takes the
+release's installer instead. The phone is given its files only after the trial. A release without a feed (the Linux
+build, which uploads it, did not finish) goes to the installer too.
+
+`relay-server` itself holds Python and the libraries only (`backend/server_build.py`, which also bundles the whole
+standard library and every submodule of the libraries in use, so that new code can import them);
+`backend/relay_server.py` loads `app` from the content folder.
+
+**Installer updates.** electron-updater reads the `publish` target in package.json: this repository's GitHub releases
 (`penroseailabs/penrose`), read without a token.
 `RELAY_UPDATE_URL=https://…/` at build time points the app at a plain HTTPS folder serving `dist/`'s `latest.yml`,
-`latest-mac.yml` and installers instead. The app checks 15 s after launch and every six hours, downloads in the
-background, then offers "Restart now" (its own shutdown first, so the phone's disk stays consistent) or installs on
-the next quit. Windows installs unsigned updates, and so does the Linux AppImage. macOS installs updates from the
-`zip` target and only when the app is signed with a Developer ID and notarized; a build without one is signed ad
-hoc (`scripts/dist.js`), and instead of installing it tells the user a newer version exists and opens the download
-page. `npm run dist` only builds; `npm run release` builds and uploads from your own computer (GitHub needs
-`GH_TOKEN`).
+`latest-mac.yml`, installers and the two files in `dist/content` instead (plain HTTP from `127.0.0.1` works for
+content, to try an update out). The app downloads in the background, then offers "Restart now" (its own shutdown
+first, so the phone's disk stays consistent) and installs silently, or installs on the next quit. Windows installs
+unsigned updates, and so does the Linux AppImage. macOS installs updates from the `zip` target and only when the app
+is signed with a Developer ID and notarized; a build without one is signed ad hoc (`scripts/dist.js`), and instead
+of installing it tells the user a newer version exists and opens the download page (content updates need no
+signature, so they install there too). `npm run dist` only builds; `npm run release` builds and uploads the
+installers from your own computer (GitHub needs `GH_TOKEN`), without the content files.
 
 **Shipping a release.** `.github/workflows/release.yml` builds Windows, macOS (Apple Silicon) and Linux on GitHub's
 runners under one build ID, then publishes them together as one GitHub release, `v<version>`, so no installed copy

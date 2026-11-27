@@ -6,7 +6,7 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..", "..");
 // Developer files that must never ship, by name, and folders that only tests use.
 const FORBIDDEN_NAMES = [/^\.env(\..+)?$/, /^\.dev-login\.json$/, /\.sqlite3?$/, /\.db$/, /^config\.json$/];
-const FORBIDDEN_DIRS = new Set(["tests", "__pycache__", ".pytest_cache", "node_modules/.cache", "data"]);
+const FORBIDDEN_DIRS = new Set(["tests", "__pycache__", ".pytest_cache", "data"]);
 const SECRET_NAME = /KEY|TOKEN|SECRET|PASSWORD/i;
 
 /** Values of secret-looking variables in the developer's own .env files: none may appear in the app. */
@@ -37,8 +37,11 @@ function checkPackage(appOutDir) {
   for (const file of walk(appOutDir)) {
     const rel = path.relative(appOutDir, file).split(path.sep).join("/");
     const parts = rel.split("/");
-    if (FORBIDDEN_NAMES.some((re) => re.test(parts.at(-1)))) problems.push(`developer file: ${rel}`);
-    if (parts.slice(0, -1).some((part) => FORBIDDEN_DIRS.has(part))) problems.push(`test or dev folder: ${rel}`);
+    // A library's own files (wrangler's, in coordinator/node_modules) may be named anything.
+    if (!parts.includes("node_modules")) {
+      if (FORBIDDEN_NAMES.some((re) => re.test(parts.at(-1)))) problems.push(`developer file: ${rel}`);
+      if (parts.slice(0, -1).some((part) => FORBIDDEN_DIRS.has(part))) problems.push(`test or dev folder: ${rel}`);
+    }
     if (secrets.length) {
       const bytes = fs.readFileSync(file);
       if (secrets.some((secret) => bytes.includes(secret))) problems.push(`contains a key from a local .env: ${rel}`);

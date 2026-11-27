@@ -76,7 +76,7 @@ interface Window {
     /** Deploys the coordinator and companion app to the user's Cloudflare account (signing in first when
      *  needed) and resolves with the address; joins a run already going. */
     companionSetup?: () => Promise<{ ok: boolean; origin?: string; error?: string }>;
-    companionState?: () => Promise<{ running: boolean; step: string; deployed: { build: string; origin: string } | null }>;
+    companionState?: () => Promise<{ running: boolean; step: string; deployed: { version: string; origin: string } | null }>;
     onCompanionEvent?: (callback: (event: CompanionEvent) => void) => () => void;
     /** A native confirmation; true when the user chooses `action`. */
     confirm?: (options: { message: string; detail?: string; action: string }) => Promise<boolean>;

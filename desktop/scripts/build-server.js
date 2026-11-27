@@ -20,25 +20,9 @@ if (!fs.existsSync(base)) {
 const venv = path.join(backend, "build", "server-venv");
 const python = process.platform === "win32" ? path.join(venv, "Scripts", "python.exe") : path.join(venv, "bin", "python");
 if (!fs.existsSync(python)) execFileSync(base, ["-m", "venv", venv], { stdio: "inherit" });
-const sep = process.platform === "win32" ? ";" : ":";
 const run = (args) => execFileSync(python, args, { cwd: backend, stdio: "inherit" });
 
 run(["-m", "pip", "install", "--quiet", "-r", "requirements.txt", "pyinstaller"]);
-run([
-  "-m", "PyInstaller", "relay_server.py",
-  "--name", "relay-server",
-  "--noconfirm", "--clean", "--onedir", "--console",
-  "--distpath", "dist", "--workpath", path.join("build", "pyinstaller"),
-  // Services are imported lazily per subcommand, and uvicorn picks its loop and protocols at run time.
-  "--collect-submodules", "app",
-  "--collect-submodules", "uvicorn",
-  "--add-data", `agent_prompts${sep}agent_prompts`,
-  "--add-data", `skills${sep}skills`,
-  "--add-data", `app/bridge/web.js${sep}app/bridge`,
-  "--add-data", `app/bridge/autoconsent.js${sep}app/bridge`,
-  "--add-data", `app/gateway/google_results.js${sep}app/gateway`,
-  "--add-data", `app/gateway/play_results.js${sep}app/gateway`,
-  "--exclude-module", "pytest",
-  "--exclude-module", "tkinter",
-]);
+// Python and the libraries only: penrose's own code ships beside it as content (backend/server_build.py).
+run(["server_build.py"]);
 console.log(`Built ${path.join(backend, "dist", "relay-server")}`);

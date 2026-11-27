@@ -13,6 +13,7 @@ data/**
 desktop/node_modules/
 desktop/dist/
 desktop/vendor/
+desktop/content/
 backend/dist/
 backend/build/
 backend/*.spec

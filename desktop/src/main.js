@@ -16,12 +16,14 @@ const path = require("node:path");
 const readline = require("node:readline");
 const { Writable } = require("node:stream");
 const autostart = require("./autostart");
+const contentStore = require("./content");
 const datafolder = require("./datafolder");
 
 // RELAY_PHONE_PORT: another instance's phone (a second profile in RELAY_DATA_DIR runs beside this one's).
 const SERIAL = `emulator-${Number(process.env.RELAY_PHONE_PORT) || 5570}`;
 const DEV = !app.isPackaged;
-// One ID for everything in this build (scripts/release.js); stamped into the packaged app's package.json.
+// The ID of the build this installer came from (scripts/release.js), stamped into the packaged app's package.json.
+// What runs may be newer: an update without an installer replaces the content (buildId(), src/content.js).
 const BUILD_ID = require("../package.json").relayBuildId || "dev";
 const ROOT = path.resolve(__dirname, "..", ".."); // the repository, in development
 
@@ -148,12 +150,53 @@ function serverCommand(args) {
   return { command: resource("server", name), args, cwd: resource("server") };
 }
 
+// The installed app's content (the services' code, the web apps, the phone's files): the installer's, or an update
+// downloaded since (src/content.js). Chosen once penrose knows it is the only copy running (lifecycle, below).
+let updates = null; // the content store
+let content = null; // the content in use: { dir, build, version, shell, companion, trial }
+
+const buildId = () => content?.build || BUILD_ID;
+const versionNow = () => content?.version || app.getVersion();
+
 function androidAssets() {
-  return DEV ? path.join(ROOT, "desktop", "assets", "android") : resource("android");
+  return DEV ? path.join(ROOT, "desktop", "assets", "android") : path.join(content.dir, "android");
 }
 
 function frontendDir() {
-  return DEV ? path.join(ROOT, "frontend", "dist") : resource("frontend");
+  return DEV ? path.join(ROOT, "frontend", "dist") : path.join(content.dir, "frontend");
+}
+
+/** From here on, everything penrose starts runs `root`. */
+function useContent(root) {
+  content = root;
+  process.env.RELAY_CONTENT = root.dir; // relay-server loads penrose's code from there (backend/relay_server.py)
+  process.env.RELAY_PYCACHE = path.join(DATA, "updates", "pycache", root.build);
+  app.setAboutPanelOptions({ applicationName: "penrose", applicationVersion: versionNow(), version: `build ${buildId()}` });
+}
+
+function setupContent() {
+  const { relayContentFeed: feedBase = "" } = require("../package.json");
+  updates = contentStore({
+    home: path.join(DATA, "updates"),
+    bundled: resource("content"),
+    feedBase,
+    fetch: (url, options) => electronNet.fetch(url, options),
+    check: checkContent,
+  });
+  useContent(updates.resolve());
+}
+
+/** Unpack a downloaded update into `dir` and see that this copy's Python can load all of it. */
+function checkContent(dir, zip) {
+  const { command, args, cwd } = serverCommand(["check-content", dir, zip]);
+  const env = { ...process.env, DATA_DIR: path.join(DATA, "updates", "check-data") };
+  return new Promise((resolve, reject) => {
+    execFile(command, args, { cwd, env, windowsHide: true, timeout: 5 * 60_000, maxBuffer: 16 * 1024 * 1024 },
+      (error, _stdout, stderr) => {
+        if (!error) return resolve();
+        reject(new Error(`This copy of penrose cannot run the update: ${String(stderr || error.message).trim().slice(-2000)}`));
+      });
+  });
 }
 
 function apkeepPath() {
@@ -196,7 +239,9 @@ function adbPath() {
 // --- child processes --------------------------------------------------------------------------------
 
 const children = new Map(); // name -> ChildProcess
+let unexpectedExits = 0; // services that ended by themselves, this launch
 const crashes = new Map(); // name -> recent crash count, for the restart back-off
+const restarts = new Map(); // name -> the pending restart of a crashed service
 let quitting = false;
 
 const LOG_LIMIT = 5 * 1024 * 1024;
@@ -254,12 +299,13 @@ function startService(name, args, env) {
     if (children.get(name) !== child) return; // stopped on purpose, or already replaced
     children.delete(name);
     if (quitting || code === 0) return;
+    unexpectedExits += 1;
     // A crashed service restarts after a pause that doubles with each quick crash (1 s up to a minute),
     // so a service that cannot start does not spin. A minute of running resets the count.
     const count = Date.now() - started > 60_000 ? 1 : (crashes.get(name) || 0) + 1;
     crashes.set(name, count);
     const delay = Math.min(60_000, 1000 * 2 ** (count - 1));
-    setTimeout(() => !quitting && !children.has(name) && startService(name, args, env), delay);
+    restarts.set(name, setTimeout(() => !quitting && !children.has(name) && startService(name, args, env), delay));
   });
   children.set(name, child);
   return child;
@@ -267,6 +313,7 @@ function startService(name, args, env) {
 
 /** Stop a service on purpose (no crash restart). Resolves once it has exited. */
 function stopService(name) {
+  clearTimeout(restarts.get(name));
   const child = children.get(name);
   children.delete(name);
   if (!child || child.exitCode !== null) return Promise.resolve();
@@ -373,9 +420,10 @@ function freePort() {
   });
 }
 
-async function waitFor(url, headers = {}, seconds = 60) {
+/** Whether `url` answered OK within `seconds`; `givenUp()` ends the wait early. */
+async function waitFor(url, headers = {}, seconds = 60, givenUp = () => false) {
   const deadline = Date.now() + seconds * 1000;
-  while (Date.now() < deadline) {
+  while (Date.now() < deadline && !givenUp()) {
     try {
       const response = await fetch(url, { headers });
       if (response.ok) return true;
@@ -571,7 +619,7 @@ function phoneReady() {
   if (phoneReadying) return;
   phoneReadying = true;
   const ready = ["device-ready", "--home", ANDROID_HOME_DIR, "--sdk", sdkDir(), "--serial", SERIAL,
-    "--assets", androidAssets(), "--build-id", BUILD_ID];
+    "--assets", androidAssets(), "--build-id", buildId()];
   // Only for an emulator this launch started with the option: one adopted from an earlier build runs without it,
   // and restarting Android inside it would not add it.
   if (FAST_CLOCK_ARGS.length && !adoptedPhone) ready.push("--fast-clock");
@@ -802,7 +850,7 @@ function watchKeptPhone() {
 
 let services = null; // { apiPort, env }
 
-async function startServices() {
+async function startServices(givenUp) {
   const [apiPort, gatewayPort] = [DEV_API_PORT || (await freePort()), await freePort()];
   const [devUser, ...devPassword] = DEV_LOGIN.split(":");
   const login = DEV_LOGIN
@@ -835,7 +883,7 @@ async function startServices() {
   };
   services = { apiPort, gatewayPort, origin, env, control: await startControl() };
   startServiceSet();
-  if (!(await waitFor(`${origin}/api/health`))) {
+  if (!(await waitFor(`${origin}/api/health`, {}, 60, givenUp))) {
     throw new Error("penrose could not start its background service. Quit penrose and open it again.");
   }
   // Sign the window in with this launch's credentials.
@@ -852,6 +900,7 @@ async function startServices() {
   });
   if (DEV_WATCH) watchBackend();
   writeLauncher();
+  services.ready = true;
 }
 
 /** The `relay` command for other programs on this computer (Claude Code, Cowork): a launcher in <data>/bin that
@@ -1326,18 +1375,26 @@ function relaunch() {
 }
 
 // --- updates ------------------------------------------------------------------------------------------------
-// electron-updater against the `publish` target in package.json (app-update.yml in the packaged app). An update
-// is the whole installer, so the services, the UI and the phone-side assets come with it; the provisioner's
-// post-boot check then updates the phone itself from those assets. Checked after launch and every six hours,
-// downloaded in the background, installed on the restart the user accepts or on the next quit.
+// Two kinds, both from the releases the app is published to, looked for after launch and every six hours.
 //
-// A Mac build without a Developer ID (scripts/dist.js) cannot do that: macOS installs nothing into an app that is
-// not signed by one. It checks the same way, then says a newer version exists and opens the download page.
+// Most releases change only the content: penrose's code, the web apps, the phone's files (src/content.js). That is
+// downloaded in the background and installed by restarting the services, which leaves the phone running; the
+// provisioner's check then updates the phone itself when its files changed.
+//
+// A release that changes anything else (this app, the Python libraries: scripts/shell-id.js) comes as the whole
+// installer, through electron-updater against the `publish` target in package.json (app-update.yml in the packaged
+// app): downloaded in the background, installed silently on the restart the user accepts or on the next quit.
+//
+// A Mac build without a Developer ID (scripts/dist.js) cannot install that: macOS installs nothing into an app that
+// is not signed by one. It checks the same way, then says a newer version exists and opens the download page.
 
 const { autoUpdater } = require("electron-updater");
 const { relayManualUpdates: MANUAL_UPDATES = false, relayDownloadPage: DOWNLOAD_PAGE = "" } = require("../package.json");
-let updateReady = null; // the version downloaded and waiting for a restart
+let updateReady = null; // the installer's version, downloaded and waiting for a restart
 let updateOffered = null; // the version whose download was last offered, so the six-hourly check asks once
+let contentReady = null; // content downloaded and waiting for the services to restart
+let checking = false;
+let switching = false; // the services are moving to other content
 
 function setupUpdates() {
   if (DEV) return;
@@ -1354,20 +1411,134 @@ function setupUpdates() {
   setInterval(() => checkForUpdates(false), 6 * 60 * 60 * 1000);
 }
 
+const updateLog = (text) => autoUpdater.logger?.info(text);
+
 /** Check now; `manual` (the menu) also reports "up to date" and failures, which the timer keeps to the log. */
 async function checkForUpdates(manual) {
   const tell = (message, detail, type = "info") =>
     manual && dialog.showMessageBox(mainWindow, { type, buttons: ["OK"], noLink: true, message, detail });
   if (DEV) return tell("Updates come with the installed app", `This is a development run (build ${BUILD_ID}).`);
   if (updateReady) return manual && offerRestart(updateReady);
+  if (checking || switching) return;
+  checking = true;
   try {
-    const result = await autoUpdater.checkForUpdates();
-    if (MANUAL_UPDATES && result?.isUpdateAvailable) {
-      if (manual || updateOffered !== result.updateInfo.version) offerDownload(result.updateInfo.version);
-    } else if (result?.downloadPromise) tell(`Downloading penrose ${result.updateInfo.version}`, "You will be asked to restart when it is ready.");
-    else tell("penrose is up to date", `Version ${app.getVersion()}, build ${BUILD_ID}.`);
+    const found = await updates.look(content);
+    if (found.kind === "current") return tell("penrose is up to date", `Version ${versionNow()}, build ${buildId()}.`);
+    if (found.kind === "content") {
+      let offer = manual;
+      if (contentReady?.build !== found.feed.build) {
+        try {
+          contentReady = await updates.download(found.feed);
+          updateLog(`downloaded update ${contentReady.build}`);
+          offer = true;
+        } catch (error) {
+          if (!error.unusable) throw error;
+          updateLog(error.message);
+          return await checkInstaller(tell, manual);
+        }
+      }
+      if (offer) offerContent(contentReady);
+      return;
+    }
+    await checkInstaller(tell, manual);
   } catch (error) {
+    updateLog(`check failed: ${error.message || error}`);
     tell("Could not check for updates", String(error.message || error), "warning");
+  } finally {
+    checking = false;
+  }
+}
+
+/** The release needs the whole installer (or holds no content this copy can take). */
+async function checkInstaller(tell, manual) {
+  const result = await autoUpdater.checkForUpdates();
+  if (MANUAL_UPDATES && result?.isUpdateAvailable) {
+    if (manual || updateOffered !== result.updateInfo.version) offerDownload(result.updateInfo.version);
+  } else if (result?.downloadPromise) tell(`Downloading penrose ${result.updateInfo.version}`, "You will be asked to restart when it is ready.");
+  else tell("penrose is up to date", `Version ${versionNow()}, build ${buildId()}.`);
+}
+
+async function offerContent(next) {
+  if (setupRun) return; // the phone is being set up: the next start installs it
+  const { response } = await dialog.showMessageBox(mainWindow, {
+    type: "info",
+    buttons: ["Update now", "Later"],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true,
+    message: `penrose ${next.version} is ready`,
+    detail: "It installs in under a minute and the phone stays on. A task that is running now is stopped. " +
+      "\"Later\" installs it when penrose next starts.",
+  });
+  if (response === 0) await applyContent(next);
+}
+
+/** Start the services on the content in use and see that they stay up. */
+async function startOnContent() {
+  const exits = unexpectedExits;
+  const crashed = () => unexpectedExits !== exits;
+  if (services) {
+    await Promise.all(["api", "gateway", "worker"].map(stopService));
+    services.env.FRONTEND_DIR = frontendDir();
+    startServiceSet();
+    if (!(await waitFor(`${services.origin}/api/health`, {}, 60, crashed))) throw new Error("The services did not start.");
+  } else {
+    await startServices(crashed);
+  }
+  for (let i = 0; i < 32 && !crashed(); i++) await new Promise((r) => setTimeout(r, 250));
+  if (crashed()) throw new Error("A service stopped right after starting.");
+}
+
+/** Try the content in use; when the services do not run on it, go back to what worked before. Answers whether it
+ *  runs. */
+async function tryContent() {
+  try {
+    await startOnContent();
+    content = updates.confirm(content);
+    return true;
+  } catch (error) {
+    if (quitting) return false;
+    updateLog(`update ${content.build} did not start: ${error.message || error}`);
+    await Promise.all(["api", "gateway", "worker"].map(stopService));
+    useContent(updates.reject(content));
+    // A first start that failed part-way never signed the window in: start the services from the beginning.
+    if (!services?.ready) services = null;
+    if (services) {
+      services.env.FRONTEND_DIR = frontendDir();
+      startServiceSet();
+      if (!(await waitFor(`${services.origin}/api/health`))) throw new Error("The services did not start.");
+    } else {
+      await startServices();
+    }
+    return false;
+  }
+}
+
+/** Move the running app to downloaded content: the services restart, the phone stays on. */
+async function applyContent(next) {
+  if (switching || quitting || setupRun || !services) return;
+  switching = true;
+  try {
+    mainWindow?.loadFile(path.join(__dirname, "boot.html"));
+    useContent(updates.use(next));
+    const worked = await tryContent();
+    if (quitting) return;
+    contentReady = null;
+    mainWindow?.loadURL(home());
+    writeLauncher();
+    // The phone's own files, from the content now in use.
+    if (androidStatus?.phone_ready && (children.has("emulator") || adoptedPhone)) phoneReady();
+    companion.refresh();
+    if (!worked) {
+      dialog.showMessageBox(mainWindow, {
+        type: "warning", buttons: ["OK"], noLink: true, message: "The update did not start",
+        detail: "penrose went back to the version that was working.",
+      });
+    }
+  } catch (error) {
+    dialog.showErrorBox("penrose could not restart", `${error.message || error}\n\nQuit penrose and open it again.`);
+  } finally {
+    switching = false;
   }
 }
 
@@ -1403,7 +1574,7 @@ async function offerRestart(version) {
   rememberBounds();
   await stopEmulator();
   for (const child of children.values()) child.kill();
-  autoUpdater.quitAndInstall(false, true);
+  autoUpdater.quitAndInstall(true, true); // silently, and penrose opens again
 }
 
 // --- usage count --------------------------------------------------------------------------------------------
@@ -1426,7 +1597,7 @@ function sendUsagePing() {
     config = { ...config, installId: crypto.randomUUID() };
     writeConfig(config);
   }
-  const body = JSON.stringify({ id: config.installId, version: app.getVersion(), os: process.platform });
+  const body = JSON.stringify({ id: config.installId, version: versionNow(), os: process.platform });
   electronNet
     .fetch(STATS_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body })
     .then((response) => response.ok && writeConfig({ ...readConfig(), usagePingDay: today }))
@@ -1448,7 +1619,7 @@ ipcMain.handle("usage:set", (_event, on) => {
 
 function showAbout() {
   dialog.showMessageBox(mainWindow, {
-    type: "info", buttons: ["OK"], noLink: true, message: `penrose ${app.getVersion()}`, detail: `Build ${BUILD_ID}`,
+    type: "info", buttons: ["OK"], noLink: true, message: `penrose ${versionNow()}`, detail: `Build ${buildId()}`,
   });
 }
 
@@ -1487,13 +1658,23 @@ async function launch() {
   openMain(); // at once, with its boot screen, while the rest starts
   // The phone check (a Python process) and the services start together: the services need only adb's path.
   // The phone starts only once the check finds it exists; otherwise the app sets it up first.
-  statusRead = readAndroidStatus().catch((error) => console.error("Could not read the phone's status:", error));
-  statusRead.then(() => {
-    startEmulator();
-    resumeSetup();
-  });
+  const startPhone = () => {
+    statusRead = readAndroidStatus().catch((error) => console.error("Could not read the phone's status:", error));
+    statusRead.then(() => {
+      startEmulator();
+      resumeSetup();
+    });
+  };
+  // An update not yet seen to work goes first: the phone is not given its files until the services run on it.
+  const trial = Boolean(content?.trial);
+  if (!trial) startPhone();
   try {
-    await startServices();
+    if (trial) {
+      await tryContent();
+      startPhone();
+    } else {
+      await startServices();
+    }
   } catch (error) {
     await dialog.showMessageBox(mainWindow, {
       type: "error",
@@ -1506,6 +1687,7 @@ async function launch() {
     return app.quit();
   }
   mainWindow?.loadURL(home());
+  companion.refresh();
 }
 
 // --- the window's API (preload.js) -------------------------------------------------------------------------
@@ -1532,8 +1714,13 @@ async function checkKey(provider, key) {
 
 // "Relay on your phone": deploy the coordinator to the user's Cloudflare account (src/companion.js).
 const companion = require("./companion")({
-  DATA, DEV, ROOT, BUILD_ID, resource, log: (text) => logStream("app").write(`${new Date().toISOString()} ${text}
-`),
+  DATA, DEV,
+  // The coordinator's source and the built phone app come with the content; wrangler comes with the installer.
+  source: () => (DEV ? path.join(ROOT, "coordinator") : path.join(content.dir, "coordinator")),
+  assets: () => (DEV ? path.join(ROOT, "frontend", "dist-companion") : path.join(content.dir, "companion")),
+  modules: () => (DEV ? path.join(ROOT, "coordinator", "node_modules") : resource("coordinator", "node_modules")),
+  version: () => content?.companion || "dev",
+  log: (text) => logStream("app").write(`${new Date().toISOString()} ${text}\n`),
 });
 companion.listen((event) => mainWindow?.webContents.send("companion:event", event));
 ipcMain.handle("companion:setup", () => companion.setup());
@@ -1607,7 +1794,7 @@ function runSetup(sdk, acceptLicenses, startOver = false) {
   config.sdk = sdk;
   config.licensesAccepted = acceptLicenses;
   writeConfig(config);
-  const args = ["setup", "--home", ANDROID_HOME_DIR, "--sdk", sdk, "--assets", androidAssets(), "--build-id", BUILD_ID];
+  const args = ["setup", "--home", ANDROID_HOME_DIR, "--sdk", sdk, "--assets", androidAssets(), "--build-id", buildId()];
   if (acceptLicenses) args.push("--accept-licenses");
   if (startOver) args.push("--start-over");
   const run = { marks: [], startedAt: Date.now(), lastEventAt: Date.now() };
@@ -1741,7 +1928,13 @@ if (!app.requestSingleInstanceLock()) {
       app.exit(0);
       return;
     }
-    app.setAboutPanelOptions({ applicationName: "penrose", applicationVersion: app.getVersion(), version: `build ${BUILD_ID}` });
+    try {
+      if (DEV) app.setAboutPanelOptions({ applicationName: "penrose", applicationVersion: app.getVersion(), version: `build ${BUILD_ID}` });
+      else setupContent();
+    } catch (error) {
+      dialog.showErrorBox("penrose could not start", String(error.message || error));
+      return app.exit(1);
+    }
     applyContentPolicy();
     buildMenu();
     setupAutostart();
@@ -1761,6 +1954,7 @@ if (!app.requestSingleInstanceLock()) {
     quitting = true;
     event.preventDefault();
     rememberBounds(); // app.exit() below skips the window's own close event
+    if (content?.trial) updates.abandon();
     (async () => {
       await stopEmulator(); // a clean shutdown keeps the phone's disk consistent
       for (const child of children.values()) child.kill();
