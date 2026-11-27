@@ -78,6 +78,7 @@
         "filter": [
           "**/*",
           "!@cloudflare/workerd-*/**",
+          "!**/.bin/**",
           "!workerd/**",
           "!typescript/**",
           "!@cloudflare/workers-types/**"
